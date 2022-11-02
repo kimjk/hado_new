@@ -1,0 +1,215 @@
+<%@ page import="java.sql.*"%>
+<%@ page import="java.util.*"%>
+<%@ page import="ftc.util.*"%>
+
+<%@ page import="ftc.db.ConnectionResource"%>
+<%@ page import="ftc.db.ConnectionResource2"%>
+
+<%@ include file="/hado/wTools/inc/WB_I_Global.jsp"%>
+<%@ include file="/hado/wTools/inc/WB_I_chkMngSession.jsp"%>
+
+<%@ page import="java.text.DecimalFormat"%>
+
+<%
+/* -- Product Notice ----------------------------------------------------------------------------------*/
+/*  1. 프로젝트명 : 공정관리위원회 하도급거래 서면직권실태조사					                       */
+/*  2. 업체정보 :																					   */
+/*     - 업체명 : (주)로티스아이																	   */
+/*	   - Project Manamger : 정광식 부장 (pcxman99@naver.com)										   */
+/*     - 연락처 : T) 031-902-9188 F) 031-902-9189 H) 010-8329-9909									   */
+/*  3. 일자 : 2009년 5월																			   */
+/*  4. 최초작성자 및 일자 : (주)로티스아이 정광식 / 2011-10-18										   */
+/*  5. 업데이트내용 (내용 / 일자)																	   */
+/*  6. 비고																							   */
+/*		1) 웹관리툴 리뉴얼 / 2011-10-18																   */
+/*-----------------------------------------------------------------------------------------------------*/
+
+/*---------------------------------------- Variable Difinition ----------------------------------------*/
+	String stt = StringUtil.checkNull(request.getParameter("tt")).trim();
+	String comm = StringUtil.checkNull(request.getParameter("comm")).trim();
+
+	ConnectionResource resource = null;
+	Connection conn = null;
+	PreparedStatement pstmt = null;
+	ResultSet rs = null;
+	
+	String sCYear = st_Current_Year;
+	String sSQLs = "";
+	String tmpStr = "";
+
+	String[][] arrData = new String[10001][13];
+
+	int nLoop = 1;
+
+	int sStartYear = 2003;
+
+	java.util.Calendar cal = java.util.Calendar.getInstance();
+
+	DecimalFormat formater = new java.text.DecimalFormat("###,###,###,###,###,###,###,##0.0");
+	DecimalFormat formater2 = new java.text.DecimalFormat("###,###,###,###,###,###,###,##0");
+/*-----------------------------------------------------------------------------------------------------*/
+
+/*=================================== Record Selection Processing =====================================*/
+	String tmpYear = StringUtil.checkNull(request.getParameter("cyear")).trim();
+	String sTradeST=StringUtil.checkNull(request.getParameter("tradest")).trim();
+	String sAlign = StringUtil.checkNull(request.getParameter("wAlign"));
+	String sName = StringUtil.checkNull(request.getParameter("mName"));
+
+	if( !tmpYear.equals("") ) {
+		session.setAttribute("cyear", tmpYear);
+	} else {
+		session.setAttribute("cyear", st_Current_Year);
+	}
+
+	if( stt.equals("start") ) {
+		session.setAttribute("wgb", "1");
+	}
+
+	if( comm.equals("search") ) {
+		session.setAttribute("wgb", StringUtil.checkNull(request.getParameter("wgb")).trim());
+	}
+	
+	int currentYear = st_Current_Year_n;
+	currentYear = Integer.parseInt(session.getAttribute("cyear")+"");
+
+	int endCurrentYear = st_Current_Year_n;
+	
+	// view table name
+	String currentOent = currentYear>=2012 ? "HADO_TB_Oent_"+tmpYear : "HADO_TB_Oent";
+	String currentCash = currentYear>=2012 ? "HADO_TB_OENT_CASH_PAYTYPE_"+tmpYear : "HADO_TB_OENT_CASH_PAYTYPE";
+
+	try {
+		resource = new ConnectionResource();
+		conn = resource.getConnection();
+
+		sSQLs="SELECT * FROM ( \n";
+		sSQLs+="	SELECT AA.*,NVL((BB.Survey_Money_Total+BB.Survey_Bi_Total),0) Survey_Total FROM ( \n";
+		sSQLs+="		SELECT * FROM ( \n";
+		sSQLs+="			SELECT B.Mng_no, B.OENT_GB, C.OENT_NAME, C.OENT_CAPTINE, \n";
+		sSQLs+="			(B.Cash + B.LC + B.BCard + B.BBlend + B.CreditLend + B.Buy + B.Network) PaySum, \n";
+		sSQLs+="			B.Cash, B.LC, B.BCard, B.BBlend, B.CreditLend, B.Buy, B.Network, B.Current_Year, \n";
+		sSQLs+="			C.Comp_Status, C.Subcon_Type, C.Addr_Status, C.Oent_Status FROM ( \n";
+		sSQLs+="				SELECT Mng_No, OENT_GB, SUM(TYPE_CASH) Cash, SUM(TYPE_LOCALLC) LC, \n";
+		sSQLs+="				SUM(TYPE_BCARD) BCard, SUM(TYPE_BBLEND) BBlend, SUM(TYPE_CREDITLEND) CreditLend, \n";
+		sSQLs+="				SUM(Type_Buy) Buy, SUM(Type_Network) Network, Current_Year FROM ( \n";
+		sSQLs+="					SELECT * FROM "+currentCash+" \n";
+		sSQLs+="					WHERE Current_Year='"+currentYear+"' \n";
+		sSQLs+="				) A \n";
+		sSQLs+="				GROUP BY Mng_No, OENT_GB, Current_Year \n";
+		sSQLs+="			) B LEFT JOIN "+currentOent+" C \n";
+		sSQLs+="			ON B.Mng_No=C.Mng_No AND B.Current_Year=C.Current_Year AND B.Oent_GB=C.Oent_GB \n";
+		sSQLs+="			WHERE SUBSTR(B.Mng_No,-7)<>'1234567' AND LENGTH(B.Mng_No)>4  \n";
+				
+		if( !session.getAttribute("wgb").equals("") ) {
+			sSQLs+="			AND B.Oent_GB='"+session.getAttribute("wgb")+"' \n";
+		}
+		sSQLs+="		) CCC \n";
+		sSQLs+="		WHERE  Oent_Status='1' AND Subcon_Type<='2' AND Comp_Status='1' AND Addr_Status IS NULL\n";
+		if( !sName.equals("") ) { 
+			sSQLs+="		AND REPLACE(Oent_Name,' ','') LIKE '%"+new String(sName.trim().getBytes("EUC-KR"), "ISO8859-1" )+"%' \n";
+		}
+		sSQLs+="	) AA LEFT JOIN HADO_TB_Oent_Survey_Result BB \n";
+		sSQLs+="	ON AA.Mng_No=BB.Mng_No AND AA.Oent_GB=BB.Oent_GB AND AA.Current_Year=BB.Current_Year \n";
+		sSQLs+=") DDD \n";
+		sSQLs+="WHERE Survey_Total = 0 ";
+		if( sAlign.equals("2") ) {
+			sSQLs+="ORDER BY REPLACE(Oent_Name,'(','')";
+		} else {
+			sSQLs+="ORDER BY Mng_No";
+		}
+
+		//System.out.println(sSQLs);
+				
+		pstmt = conn.prepareStatement(sSQLs);
+		rs = pstmt.executeQuery();
+		
+		nLoop = 1;
+		while( rs.next() ) {
+			arrData[nLoop][1] = rs.getString("Mng_No");
+			arrData[nLoop][2] = rs.getString("Oent_GB");
+			arrData[nLoop][3] = new String( StringUtil.checkNull(rs.getString("Oent_Name")).trim().getBytes("ISO8859-1"), "EUC-KR" );
+			arrData[nLoop][4] = new String( StringUtil.checkNull(rs.getString("Oent_Captine")).trim().getBytes("ISO8859-1"), "EUC-KR" );
+			arrData[nLoop][5] = rs.getString("PaySum");
+			arrData[nLoop][6] = rs.getString("Cash");
+			arrData[nLoop][7] = rs.getString("LC");
+			arrData[nLoop][8] = rs.getString("BCard");
+			arrData[nLoop][9] = rs.getString("BBlend");
+			arrData[nLoop][10] = rs.getString("CreditLend");
+			arrData[nLoop][11] = rs.getString("Buy");
+			arrData[nLoop][12] = rs.getString("Network");
+			nLoop++;
+		}
+		rs.close();
+		nLoop--;
+	} catch(Exception e) {
+		e.printStackTrace();
+	} finally {
+		if (rs != null)		try{rs.close();}	catch(Exception e){}
+		if (pstmt != null)	try{pstmt.close();}	catch(Exception e){}
+		if (conn != null)	try{conn.close();}	catch(Exception e){}
+		if (resource != null) resource.release();
+	}
+/*=====================================================================================================*/
+%>
+<script language="javascript">
+content="";
+content+="<table class='resultTable'>";
+content+="	<tr>";
+content+="		<th rowspan='2'>순번</th>";
+content+="		<th rowspan='2'>원사업자명</th>";
+content+="		<th rowspan='2'>관리번호</th>";
+content+="		<th rowspan='2'>대표자</th>";
+content+="		<th colspan='8'>결제금액</th>";
+content+="	</tr>";
+content+="	<tr>";
+content+="		<th>계</th>";
+content+="		<th>현금,수표</th>";
+content+="		<th>내국신용장</th>";
+content+="		<th>기업구매전용카드</th>";
+content+="		<th>기업구매자금대출</th>";
+content+="		<th>상환청구권 없는 외상매출채권</th>";
+content+="		<th>구매론</th>";
+content+="		<th>상환청구권 없는 네트워크론</th>";
+content+="	</tr>";
+
+<%if( !stt.equals("start") ) {%>
+	<%for(int ni = 1; ni<= nLoop; ni++) {%>
+content+="	<tr>";
+content+="		<td><%=ni%></td>";
+content+="		<td><%=arrData[ni][3]%></td>";
+content+="		<td><%=arrData[ni][1]%></td>";
+content+="		<td><%=arrData[ni][4]%></td>";
+content+="		<td><%=formater2.format(Float.parseFloat(arrData[ni][5]))%></td>";
+content+="		<td><%=formater2.format(Float.parseFloat(arrData[ni][6]))%></td>";
+content+="		<td><%=formater2.format(Float.parseFloat(arrData[ni][7]))%></td>";
+content+="		<td><%=formater2.format(Float.parseFloat(arrData[ni][8]))%></td>";
+content+="		<td><%=formater2.format(Float.parseFloat(arrData[ni][9]))%></td>";
+content+="		<td><%=formater2.format(Float.parseFloat(arrData[ni][10]))%></td>";
+content+="		<td><%=formater2.format(Float.parseFloat(arrData[ni][11]))%></td>";
+content+="		<td><%=formater2.format(Float.parseFloat(arrData[ni][12]))%></td>";
+content+="	</tr>";
+	<%}%>
+
+<%} else {%>
+content+="	<tr>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="		<td>&nbsp;</td>";
+content+="	</tr>";
+<%}%>
+content+="</table>";
+
+top.document.getElementById("divResult").innerHTML=content;
+top.setNowProcessFalse();
+</script>
+
+<%@ include file="/hado/wTools/inc/WB_I_Function.jsp"%>

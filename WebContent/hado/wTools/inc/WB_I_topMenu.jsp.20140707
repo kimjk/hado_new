@@ -1,0 +1,60 @@
+<%@ page import="java.sql.*"%>
+<%@ page import="java.util.*"%>
+<%@ page import="ftc.util.*"%>
+
+<%
+/* -- Product Notice ----------------------------------------------------------------------------------*/
+/*  1. 프로젝트명 : 공정관리위원회 하도급거래 서면직권실태조사					                       */
+/*  2. 업체정보 :																					   */
+/*     - 업체명 : (주)로티스아이																	   */
+/*	   - Project Manamger : 정광식 부장 (pcxman99@naver.com)										   */
+/*     - 연락처 : T) 031-902-9188 F) 031-902-9189 H) 010-8329-9909									   */
+/*  3. 일자 : 2009년 5월																			   */
+/*  4. 최초작성자 및 일자 : (주)로티스아이 정광식 / 2011-10-18										   */
+/*  5. 업데이트내용 (내용 / 일자)																	   */
+/*  6. 비고																							   */
+/*		1) 웹관리툴 리뉴얼 / 2011-10-18																   */
+/*-----------------------------------------------------------------------------------------------------*/
+
+			String nSelMenu = StringUtil.checkNull(request.getParameter("sel")).trim();
+
+			ArrayList arrTopMenu = new ArrayList();
+			ArrayList arrTopMenuHref = new ArrayList();
+			ArrayList arrLMenuPermision = new ArrayList();
+
+			String ckPermision = session.getAttribute("ckPermision") + "";
+			int nPermision = 1;
+			if( ckPermision.equals("T") ) {
+				nPermision = 4;
+			} else if( ckPermision.equals("M") ) {
+				nPermision = 3;
+			} else if( ckPermision.equals("V") ) {
+				nPermision = 2;
+			}
+			int tmpPermision = 1;
+
+			/* 권한설정방법
+			1: 일반등급 (P)
+			2: 조회등급 (V)
+			3: 관리등급 (M)
+			4: 시스템관리등급 (T) */
+
+			arrTopMenu.add("HOME");	arrTopMenuHref.add("/hado/hado/wTools/"); arrLMenuPermision.add("1");
+			arrTopMenu.add("원사업자"); arrTopMenuHref.add("/hado/hado/wTools/Oent/"); arrLMenuPermision.add("1");
+			arrTopMenu.add("수급사업자"); arrTopMenuHref.add("/hado/hado/wTools/SOent/"); arrLMenuPermision.add("1");
+			arrTopMenu.add("시정조치"); arrTopMenuHref.add("/hado/hado/wTools/Correct/"); arrLMenuPermision.add("1");
+			arrTopMenu.add("사이트관리"); arrTopMenuHref.add("/hado/hado/wTools/siteMng/"); arrLMenuPermision.add("3");
+			arrTopMenu.add("커뮤니티"); arrTopMenuHref.add("/hado/hado/wTools/MBoard/mboard_list.jsp?group=notice&class=notice"); arrLMenuPermision.add("4");
+			arrTopMenu.add("불공정제보"); arrTopMenuHref.add("/hado/hado/wTools/jebo/jeboard.jsp"); 
+			arrLMenuPermision.add("1");
+		%>
+		<div id="Mainmenu">
+			<li class="lt fl pdtop5"><img src="/hado/hado/wTools/img/topmenu_bg_startbar.gif"></li>
+			<%for(int ntm=0; ntm<arrTopMenu.size(); ntm++) {
+				tmpPermision = Integer.parseInt(arrLMenuPermision.get(ntm)+"");
+				if( tmpPermision <= nPermision ) {%>
+				<li class="lt fl pdtop10"><a href="<%=arrTopMenuHref.get(ntm)%>" class=btnmainmenu<%if( ntm+1==Integer.parseInt(nSelMenu) ) {%>2>▶<%}else{%>><%}%><%=arrTopMenu.get(ntm)%></a></li>
+				<li class="lt fl pdtop5"><img src="/hado/hado/wTools/img/topmenu_bg_bar.gif"/></li>
+			<%	}
+			}%>
+		</div>

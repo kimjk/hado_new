@@ -1,0 +1,129 @@
+@font-face {font-family:nanum; src:url(/inc/NanumGothic.eot); src:local('??'), url(/inc/NanumGothic.ttf) format('truetype');}
+
+img {border:0px;}
+
+* { padding: 0; margin: 0; }
+
+body {
+ font-family: dotum, Arial, Helvetica, sans-serif;
+ font-size: 12px;
+ color:#3D3E02;
+}
+
+
+#subcontainer{
+ margin:0 auto;
+ width:100%;
+ background-position:top center;
+}
+
+#wrapper { 
+ margin: 0 auto;
+ width: 780px;
+
+}
+#subheader {
+ width: 780px;
+ float: left;
+ height: 55px;
+ margin: 0px 0px 0px 0px;
+}
+
+
+#submenu {
+ clear:both;
+ width: 780px;
+ height: 34px;
+ background-color:#4A6698;
+ margin: 0px 0px 0px 0px;
+}
+
+
+#subcontent { 
+ clear:both;
+ margin: 0px 0px 0px 0px;
+ width: 780px;
+ padding:0px;
+ display: inline;
+}
+#subfooter { 
+ width: 780px;
+ clear: both;
+ margin: 20px 0px 0px 0px;
+ padding: 10px 0px 0px 0px;
+ border-top:1px solid #4A6698;
+ text-align:center;
+}
+
+.lt { list-style:none; }
+.fl {float:left;}
+.fr {float:right;}
+.fc {clear:both;}
+.tr {text-align:right;}
+
+
+.pr_2 {padding-right:3px;}
+.pt_10 {padding-top:10px;}
+.pt_20 {padding-top:20px;}
+.pt_30 {padding-top:30px;}
+
+
+/** top **/
+.logintime {font-faily:dotum; font-weight:bold; color:#c42134;}
+
+/** link - mainmenu **/
+a.mainmenu:link, a.mainmenu:visited, a.mainmenu:active {font-family:nanum,dotum; display:block; background:url(img/menubgup.gif) no-repeat; width:140px; height:34px; text-align:center; padding-top:13px; text-decoration:none; font-weight:bold; color:#7892c1; letter-spacing:-1px;}
+a.mainmenu:hover {font-family:nanum,dotum; display:block; background:url(img/menubg.gif) no-repeat; width:140px; height:34px; text-align:center;  text-decoration:none;  font-weight:bold; color:#1d3e7a; letter-spacing:-1px;}
+
+a.mainmenuup:link, a.mainmenuup:visited, a.mainmenuup:active {font-family:nanum,dotum; display:block; background:url(img/menubg.gif) no-repeat; width:140px; height:34px; text-align:center; padding-top:13px; text-decoration:none; font-weight:bold; color:#1d3e7a; letter-spacing:-1px;}
+a.mainmenuup:hover {font-family:nanum,dotum; display:block; background:url(img/menubg.gif) no-repeat; width:140px; height:34px; text-align:center;  text-decoration:none;  font-weight:bold; color:#1d3e7a; letter-spacing:-1px;}
+
+/** content - title **/
+.contenttitle {font-family:dotum; font-size:14px; letter-spacing:-1px; font-weight:bold; color:#293f66; height:30px; padding-top:20px;} /* 제목 */
+
+.boxcontent {width:780px; border:1px solid #cccccc; background-color:#f7f7f7;}
+.boxcontentleft {width:100%;  display:block; float:left; padding:10px 0px 10px 10px; line-height:18px; }
+.boxcontentright {width:770px; display:block; float:left; padding:10px 0px 10px 10px; background-color:#ffffff; line-height:18px;}
+
+.boxcontenttitle {width:96%; font-family:dotum; font-size:13px; font-weight:bold; color:#293f66;} /* 질문 */
+.boxcontentsubtitle {width:96%; font-family:dotum; font-size:12px; letter-spacing:-1px; color:#00A800; padding-left:18px;}/* 질문소제목 */
+.boxcontenthelpsubtitle {width:96%; font-family:dotum; font-size:12px; letter-spacing:-1px; color:#7892c1; }/* 도움말 질문소제목 */
+
+.noneboxcontenttitle {font-family:dotum; font-size:13px; font-weight:bold;} /* 질문2 */
+
+.boxcontent2 {width:100%; border:1px solid #CEE1FF; background-color:#E6F0FF;}
+.boxcontenthelp {width:100%; padding:10px; line-height:18px;}
+
+.boxcontent3 {width:100%;}
+.boxcontenthelp2 {width:100%; padding:10px; line-height:18px;}
+
+/* 업로드 버튼 이미지 치환 */
+a.updownicon:link, a.updownicon:visited, a.updownicon:active {font-family:nanum,dotum; background:url(img/download.gif) no-repeat; width:77px; height:28px; text-align:center; text-decoration:none; font-weight:bold; font-size:12px;}
+a.updownicon:hover {font-family:nanum,dotum; background:url(img/downloada.gif) no-repeat; width:77px; height:28px; text-align:center; text-decoration:none; font-weight:bold; font-size:12px;}
+
+ /*버튼 */
+a.contentbutton:link, a.contentbutton:visited, a.contentbutton:active {font-family:nanum,dotum; display:block; background:url(img/buttonbg.gif) no-repeat; width:82px; height:27px; text-align:center; padding-top:8px; text-decoration:none; font-weight:bold; color:#ffffff; }
+a.contentbutton:hover {font-family:nanum,dotum; display:block; background:url(img/buttonbgup.gif) no-repeat; width:82px; height:27px; text-align:center;  text-decoration:none;  font-weight:bold; color:#ffffff;}
+
+a.contentbutton2:link, a.contentbutton2:visited, a.contentbutton2:active {font-family:nanum,dotum; display:block; background:url(img/buttonbg2.gif) repeat; height:27px; text-align:center; padding-top:8px; padding-left:8px; padding-right:8px; text-decoration:none; font-weight:bold; color:#ffffff; }
+a.contentbutton2:hover {font-family:nanum,dotum; display:block; background:url(img/buttonbgup2.gif) repeat; height:27px; text-align:center;  text-decoration:none;  font-weight:bold; color:#ffffff;}
+
+input.text01b {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399; width:400px; padding:2px;}
+input.text01o {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399;  width:400px; padding:2px; background-color:#CCFFCC;}
+input.text02b {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399; width:60px; padding:2px;}
+input.text02o {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399;  width:60px; padding:2px; background-color:#CCFFCC;}
+input.text03b {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399; width:120px; padding:2px;}
+input.text03o {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399;  width:120px; padding:2px; background-color:#CCFFCC;}
+input.text04b {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399; width:200px; padding:2px; text-align:right;}
+input.text04o {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399;  width:200px; padding:2px; background-color:#CCFFCC; text-align:right;}
+input.text05 {font-family:dotum; border:none; font-size:12px; color:#333399;  width:40px; padding:2px; text-align:right;}
+input.text06 {font-family:dotum; border:none; font-size:12px; color:#333399; width:200px; padding:2px; text-align:right;}
+input.text07b {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399; width:40px; padding:2px; text-align:right;}
+input.text07o {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399;  width:40px; padding:2px; background-color:#CCFFCC; text-align:right;}
+
+textarea.textarea01b {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399; width:600px; height:80; padding:2px;}
+textarea.textarea01o {font-family:dotum; border:1px solid #C0C0C0; font-size:12px; color:#333399; width:600px; height:80; padding:2px; background-color:#CCFFCC;}
+
+a.submiticon1:link, a.submiticon1:visited, a.submiticon1:active a.submiticon1:hover {font-family:nanum,dotum; display:block; background-color:#868686; height:24px; text-align:center; padding-top:8px; padding-left:8px; padding-right:8px; text-decoration:none; font-weight:bold; color:#ffffff; }
+a.submiticon2:link, a.submiticon2:visited, a.submiticon2:active a.submiticon2:hover {font-family:nanum,dotum; display:block; background-color:#0033CC; height:24px; text-align:center; padding-top:8px; padding-left:8px; padding-right:8px; text-decoration:none; font-weight:bold; color:#ffffff; }
+a.submiticon3:link, a.submiticon3:visited, a.submiticon3:active a.submiticon3:hover {font-family:nanum,dotum; display:block; background-color:#FF0066; height:24px; text-align:center; padding-top:8px; padding-left:8px; padding-right:8px; text-decoration:none; font-weight:bold; color:#ffffff; }

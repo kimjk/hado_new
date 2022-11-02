@@ -1,0 +1,108 @@
+<style type="text/css">
+/* UI Object */
+.menu_v{position:relative;width:200px;font-size:12px;font-family:Tahoma, Geneva, sans-serif;line-height:normal}
+.menu_v ul{margin:0;padding:0;list-style:none}
+.menu_v li{position:relative;margin:0 0 -1px 0;vertical-align:top;*zoom:1}
+.menu_v li a{display:block;position:relative;padding:8px 10px;color:#666;font-weight:bold;text-decoration:none;background:#fafafa;border:1px solid #eee;*zoom:1}
+.menu_v li a .i{position:absolute;top:50%;left:100%;width:8px;height:8px;margin:-4px 0 0 -16px;color:#ccc;background:url(img/ico_sub.gif) no-repeat left top}
+.menu_v li ul{padding:5px 0;background:#fff}
+.menu_v li li{margin:0}
+.menu_v li li a{padding:5px 10px;border:0;background:#fff;font-weight:normal}
+.menu_v li li a span{color:#666}
+.menu_v li.active{z-index:2;border:1px solid #ccc}
+.menu_v li li.active{border:0}
+.menu_v li.active a{border:0;color:#000}
+.menu_v li.active .i{background-position:0 -44px}
+.menu_v li.active li a{border:0}
+.menu_v li.active ul{display:block;border-top:1px solid #eee}
+.menu_v li.active li.active a span{font-weight:bold;color:#13b200;letter-spacing:-1px}
+/* //UI Object */
+</style>
+</head>
+
+<body>
+<div id="code_origin" class="code_tmpl">
+<!-- UI Object -->
+<h1>CSS Vertical Navigation Bar.</h1>
+<div id="menu_v" class="menu_v">
+	<ul>
+	<li><a href="#"><span>원사업자</span></a>
+		<ul>
+		<li class="active"><a href="#"><span>조사대상업체</span></a></li>
+		<li><a href="#"><span>년도별조사표</span></a></li>
+		<li><a href="#"><span>제출현황</span></a></li>
+		<li><a href="#"><span>조사결과분석</span></a></li>
+		</ul>
+	</li>
+	<li><a href="#"><span>수급사업자</span></a>
+		<ul>
+		<li><a href="#"><span>조사대상업체</span></a></li>
+		<li><a href="#"><span>년도별조사표</span></a></li>
+		<li><a href="#"><span>제출현황</span></a></li>
+		<li><a href="#"><span>조사결과분석</span></a></li>
+		</ul>
+	</li>
+	<li><a href="#"><span>시정조치</span></a></li>
+	<li><a href="#"><span>사이트관리</span></a>
+		<ul>
+		<li><a href="#"><span>사용자관리</span></a></li>
+		<li><a href="#"><span>도움말게시판</span></a></li>
+		</ul>
+	</li>
+	</ul>
+</div>
+<!-- //UI Object -->
+</div>
+
+<script type="text/javascript" src="inc/jquery.js"></script>
+<script type="text/javascript">
+jQuery(function($){
+	
+	// Side Menu
+	var menu_v = $('div.menu_v');
+	var sItem = menu_v.find('>ul>li');
+	var ssItem = menu_v.find('>ul>li>ul>li');
+	var lastEvent = null;
+	
+	sItem.find('>ul').css('display','none');
+	menu_v.find('>ul>li>ul>li[class=active]').parents('li').attr('class','active');
+	menu_v.find('>ul>li[class=active]').find('>ul').css('display','block');
+
+	function menu_vToggle(event){
+		var t = $(this);
+		
+		if (this == lastEvent) return false;
+		lastEvent = this;
+		setTimeout(function(){ lastEvent=null }, 200);
+		
+		if (t.next('ul').is(':hidden')) {
+			sItem.find('>ul').slideUp(100);
+			t.next('ul').slideDown(100);
+		} else if(!t.next('ul').length) {
+			sItem.find('>ul').slideUp(100);
+		} else {
+			t.next('ul').slideUp(100);
+		}
+		
+		if (t.parent('li').hasClass('active')){
+			t.parent('li').removeClass('active');
+		} else {
+			sItem.removeClass('active');
+			t.parent('li').addClass('active');
+		}
+	}
+	sItem.find('>a').click(menu_vToggle).focus(menu_vToggle);
+	
+	function subMenuActive(){
+		ssItem.removeClass('active');
+		$(this).parent(ssItem).addClass('active');
+	}; 
+	ssItem.find('>a').click(subMenuActive).focus(subMenuActive);
+	
+	//icon
+	menu_v.find('>ul>li>ul').prev('a').append('<span class="i"></span>');
+});
+</script>
+</div>
+</body> 
+</html>

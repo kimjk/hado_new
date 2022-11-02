@@ -1,0 +1,830 @@
+<%@ page session="true" language="java" contentType="text/html; charset=euc-kr" pageEncoding="euc-kr"%>
+<%@ page import="java.sql.*"%>
+<%@ page import="java.util.*"%>
+<%@ page import="ftc.util.*"%>
+
+<%@ page import="ftc.db.ConnectionResource"%>
+<%@ page import="ftc.db.ConnectionResource2"%>
+
+<%@ include file="/hado/wTools/inc/WB_I_Global.jsp"%>
+<%@ include file="/hado/wTools/inc/WB_I_chkMngSession.jsp"%>
+
+<%@ page import="java.text.DecimalFormat"%>
+
+<%
+/* -- Product Notice ----------------------------------------------------------------------------------*/
+/*  1. 프로젝트명 : 공정관리위원회 하도급거래 서면직권실태조사					                       */
+/*  2. 업체정보 :																					   */
+/*     - 업체명 : (주)로티스아이																	   */
+/*	   - Project Manamger : 정광식 부장 (pcxman99@naver.com)										   */
+/*     - 연락처 : T) 031-902-9188 F) 031-902-9189 H) 010-8329-9909									   */
+/*  3. 일자 : 2009년 5월																			   */
+/*  4. 최초작성자 및 일자 : (주)로티스아이 정광식 / 2011-10-18										   */
+/*  5. 업데이트내용 (내용 / 일자)																	   */
+/*  6. 비고																							   */
+/*		1) 웹관리툴 리뉴얼 / 2011-10-18																   */
+/*-----------------------------------------------------------------------------------------------------*/
+
+/*---------------------------------------- Variable Difinition ----------------------------------------*/
+	
+	// 담당조사관정보추가 // 20100503 / 정광식
+	ArrayList arrDamCenter = new ArrayList();
+	ArrayList arrCVSNo = new ArrayList();
+	ArrayList arrCenterCode = new ArrayList();
+	ArrayList arrCenterName = new ArrayList();
+	ArrayList arrDeptName = new ArrayList();
+	ArrayList arrUserName = new ArrayList();
+
+	// 제조 업종배열
+	ArrayList arrProdCode = new ArrayList();
+	ArrayList arrProdName = new ArrayList();
+	// 건설 업종배열
+	ArrayList arrConstCode = new ArrayList();
+	ArrayList arrConstName = new ArrayList();
+	// 용역 업종배열
+	ArrayList arrSrvCode = new ArrayList();
+	ArrayList arrSrvName = new ArrayList();
+
+	ConnectionResource resource = null;
+	Connection conn = null;
+	PreparedStatement pstmt = null;
+	ResultSet rs = null;
+
+	int sStartYear = 2000;
+
+	int i = 0;
+	int gesu = 0;
+
+	DecimalFormat formater = new java.text.DecimalFormat("###,###,###,###,###,###,###,###");
+/*-----------------------------------------------------------------------------------------------------*/
+
+/*=================================== Record Selection Processing =====================================*/
+
+	int currentYear = st_Current_Year_n;
+	
+	try {
+		resource = new ConnectionResource();
+		conn = resource.getConnection();
+		
+		// 제조 업종 배열 생성
+		StringBuffer sbSQLs1 = new StringBuffer();
+
+		sbSQLs1.append("SELECT COMMON_CD, COMMON_NM \n");
+		sbSQLs1.append("FROM COMMON_CD \n");
+		sbSQLs1.append("WHERE ADDON_GB=?");
+		if(currentYear>=2012) {
+			sbSQLs1.append("AND COMMON_GB='010'");
+		}
+		
+		pstmt = conn.prepareStatement(sbSQLs1.toString());
+		pstmt.setString(1,"1");
+		rs = pstmt.executeQuery();
+
+		while (rs.next()) {
+			arrProdCode.add(StringUtil.checkNull(rs.getString("COMMON_CD")).trim());
+			arrProdName.add(new String( StringUtil.checkNull(rs.getString("COMMON_NM")).trim().getBytes("ISO8859-1"), "EUC-KR" ));
+		}
+		rs.close();
+
+
+		// 건설 업종 배열 생성
+		pstmt = conn.prepareStatement(sbSQLs1.toString());
+		pstmt.setString(1,"2");
+		rs = pstmt.executeQuery(); 
+	
+		while (rs.next()) {
+			arrConstCode.add(StringUtil.checkNull(rs.getString("COMMON_CD")).trim());
+			arrConstName.add(new String( StringUtil.checkNull(rs.getString("COMMON_NM")).trim().getBytes("ISO8859-1"), "EUC-KR" ));
+		}
+		rs.close();
+
+		// 용역 업종 배열 생성
+		pstmt = conn.prepareStatement(sbSQLs1.toString());
+		pstmt.setString(1,"3");
+		rs = pstmt.executeQuery();	  
+
+		while (rs.next()) {
+			arrSrvCode.add(StringUtil.checkNull(rs.getString("COMMON_CD")).trim());
+			arrSrvName.add(new String(StringUtil.checkNull(rs.getString("COMMON_NM")).trim().getBytes("ISO8859-1"), "EUC-KR" ));
+		}
+		rs.close();
+
+
+		// 2010년 담당자 세팅 방법 변경 (HADO_TB_DEPT_HISTORY)
+		StringBuffer sbSQLs2 = new StringBuffer();
+		if( st_Current_Year_n>= 2010) {
+			sbSQLs2.append("SELECT CVSNO, SUBSTR(Mng_No, 1, 1) Center_Code, Center_Name, Dept_Name, User_Name \n");
+			sbSQLs2.append("FROM HADO_VT_DEPT_HISTORY \n");
+			sbSQLs2.append("WHERE Current_Year=? \n");
+			sbSQLs2.append("GROUP BY CVSNO, SUBSTR(Mng_No, 1, 1), Center_Name, Dept_Name, User_Name \n");
+			sbSQLs2.append("ORDER BY SUBSTR(Mng_No, 1, 1), Center_Name, Dept_Name, User_Name \n");
+		} 
+
+		pstmt = conn.prepareStatement(sbSQLs2.toString());
+		pstmt.setString(1,st_Current_Year);
+		rs = pstmt.executeQuery();
+
+		while(rs.next()) {
+			arrCVSNo.add(StringUtil.checkNull(rs.getString("CVSNO")).trim());
+			arrCenterCode.add(StringUtil.checkNull(rs.getString("Center_Code")).trim());
+			arrCenterName.add(new String( StringUtil.checkNull(rs.getString("Center_NAME")).trim().getBytes("ISO8859-1"), "EUC-KR" ));
+			arrDeptName.add(new String( StringUtil.checkNull(rs.getString("Dept_NAME")).trim().getBytes("ISO8859-1"), "EUC-KR" ));
+			arrUserName.add(new String( StringUtil.checkNull(rs.getString("User_NAME")).trim().getBytes("ISO8859-1"), "EUC-KR" ));
+		}
+		rs.close();
+	} catch(Exception e) {
+		e.printStackTrace();
+	} finally {
+		if(rs!=null)		try{rs.close();}	catch(Exception e){}
+		if(pstmt!=null)		try{pstmt.close();}	catch(Exception e){}
+		if(conn!=null)		try{conn.close();}	catch(Exception e){}
+		if(resource!=null)	resource.release();
+	}
+/*=====================================================================================================*/
+%>
+<html>
+<head>
+	<title>【관리】하도급거래 서면실태조사</title>
+	<link rel="stylesheet" href="/hado/hado/wTools/style.css" type="text/css">
+</head>
+<script language="javascript" type="text/javascript" src="/hado/hado/wTools/inc/ajax_layer.js"></script>
+<script language="javascript" type="text/javascript" src="/hado/hado/wTools/inc/common_script.js"></script>
+<script language="JavaScript">
+	nNowProcess = 0;
+
+	function setNowProcessFalse() {
+		nNowProcess = 0;
+		bodyview();
+	}
+
+	var dcd=new Array();
+	var dnm=new Array();
+	<%
+	for(i=0; i<arrProdCode.size(); i++) {
+		out.print("dcd["+i+"]='"+arrProdCode.get(i)+"';");
+		out.print("dnm["+i+"]='"+arrProdName.get(i)+"';");
+	}
+	%>	
+	var ccd=new Array();
+	var cnm=new Array();
+	<%
+	for(i=0; i<arrConstCode.size(); i++) {
+		out.print("ccd["+i+"]='"+arrConstCode.get(i)+"';");
+		out.print("cnm["+i+"]='"+arrConstName.get(i)+"';");
+	}
+	%>	
+
+	var srvcd=new Array();
+	var srvnm=new Array();
+	<%
+	for(i=0; i<arrSrvCode.size(); i++) {
+		out.print("srvcd["+i+"]='"+arrSrvCode.get(i)+"';");
+		out.print("srvnm["+i+"]='"+arrSrvName.get(i)+"';");
+	}
+	%>	
+
+	var aCVSNo=new Array();
+	var aCenterCode=new Array();
+	var aCenterName=new Array();
+	var aDeptName=new Array();
+	var aUserName=new Array();
+	<%
+	for(i=0; i<arrCVSNo.size(); i++) {
+		out.print("aCVSNo["+i+"]='"+arrCVSNo.get(i)+"';");
+		out.print("aCenterCode["+i+"]='"+arrCenterCode.get(i)+"';");
+		out.print("aCenterName["+i+"]='"+arrCenterName.get(i)+"';");
+		out.print("aDeptName["+i+"]='"+arrDeptName.get(i)+"';");
+		out.print("aUserName["+i+"]='"+arrUserName.get(i)+"';");
+	}
+	%>
+
+	function deptsel() {
+		var obj1 = document.getElementById("mareacode");
+		var obj2 = document.getElementById("mdeptname");
+
+		initsel2();
+
+		chval = obj1.options[obj1.selectedIndex].value;
+		obj2.add(new Option("전체","",true,true));
+
+		for(i=0; i<aCVSNo.length; i++) {
+			if( aCenterCode[i]==chval )
+				obj2.add(new Option(aUserName[i],aCVSNo[i],false,false));
+		}
+		
+		obj2.reInitializeSelectBox();
+	}
+
+	function initsel2() {
+		var obj = document.getElementById("mdeptname");
+		for(i=0; i<100; i++) obj.options[0]=null;
+	}
+			
+	function gbsel() {
+		var obj1 = document.getElementById("wgb");
+		var obj2 = document.getElementById("sgb");
+
+		initsel();
+
+		switch(obj1.selectedIndex) {
+			case 1:
+				obj2.add(new Option("전체","",true,true));
+				for(i=0; i<dcd.length; i++) {
+					obj2.add(new Option(dnm[i],dcd[i],false,false));
+				}
+				break;
+			case 2:
+				obj2.add(new Option("전체","",true,true));
+				for(i=0; i<ccd.length; i++) {
+					obj2.add(new Option(cnm[i],ccd[i],false,false));
+				}
+				break;
+			case 3:
+				obj2.add(new Option("전체","",true,true));
+				for(i=0; i<srvcd.length; i++) {
+					obj2.add(new Option(srvnm[i],srvcd[i],false,false));
+				}
+				break;
+		}
+
+		obj2.reInitializeSelectBox();
+	}
+
+	function initsel() {
+		var obj = document.getElementById("sgb");
+
+		for(i=0; i<100; i++) obj.options[0]=null;
+	}
+
+	function goSearch() {
+		var frm = document.searchform;
+		msg = "";
+
+		if(nNowProcess == 0) {
+			frm.target="procFrame";
+			frm.action="/hado/hado/wTools/Correct/Paper_List.jsp?comm=search&page=1";
+			frm.submit();
+			nNowProcess = 1;
+			bodyhidden();
+		} else {
+			alert("현재 프로세스가 실행중입니다.\n\n잠시 후 다시 실행해 주세요.");
+		}
+	}
+
+	function pmove(val) {
+		if(val!="") {
+			var frm = document.searchform;
+
+			frm.target="procFrame";
+			frm.action=val;
+			frm.submit();
+			nNowProcess = 1;
+			bodyhidden();
+		}
+	}
+
+	function entsub(event,form)  {
+		if (window.event && window.event.keyCode == 13)
+		{
+			goSearch();
+		}
+	}
+	
+	
+	function HelpWindow2(url, w, h) {
+		helpwindow = window.open(url, "HelpWindow", "toolbar=no,width="+w+",height="+h+",directories=no,status=yes,scrollbars=yes,resize=no,menubar=no,location=no");
+		helpwindow.focus();
+	}
+
+	var sSearchWin = "0";
+	function divSearchWin() {
+		obj = document.getElementById("searchbox");
+		wobj = document.getElementById("divSrchWindow");
+		
+		if( sSearchWin =="0" ) {
+			obj.style.display = 'none';
+			wobj.innerHTML = "<a href='javascript:divSearchWin();' class='sbutton'>검색창 펼치기</a>";
+			sSearchWin = "1";
+		} else {
+			obj.style.display = '';
+			wobj.innerHTML = "<a href='javascript:divSearchWin();' class='sbutton'>검색창 가리기</a>";
+			sSearchWin = "0";
+		}
+	}
+
+	function view(mno,cyear,ogb) {
+		var lyView=document.getElementById("divView");
+		
+		if(nNowProcess == 0) {
+			document.procFrame.location.replace("Paper_Input.jsp?comm=view&mngno="+mno+"&cyear="+cyear+"&ogb="+ogb);
+			nNowProcess = 1;
+			bodyhidden();
+			lyView.style.top=Math.round(getVerticalScroll())+"px";
+			lyView.style.display="block";
+		} else {
+			alert("현재 프로세스가 실행중입니다.\n\n잠시 후 다시 실행해 주세요.");
+		}
+	}
+
+
+	function calcu(gesu) {
+		var tot=0;
+		var temp=0;
+		var obj=null;
+		for(i=1;i<=gesu;i++)
+		{
+			obj=document.getElementById("smoney"+i);
+			temp = eval("Number(clearstring(obj.value))");
+			if (temp==null) temp=0;
+			tot += temp;
+		}
+
+		obj=document.getElementById("smoneytot");
+		if(formatmoney(tot)==null)
+			obj.value="0 ";
+		else
+			obj.value=formatmoney(tot+"");
+	}
+
+	function CtxCal() {
+		var obj1=document.getElementById("ctxmoney1");
+		var obj2=document.getElementById("ctxmoney2");
+		var obj3=document.getElementById("smoneytot");
+
+		if(Number(clearstring(obj3.value))<Number(clearstring(obj1.value)))
+		{
+			alert("시정금액이 위반금액보다 큽니다.. 확인해 주시기 바랍니다.")
+			obj1.value=obj3.value;
+			obj2.value=0;
+		}
+		else
+		{
+			obj2.value=formatmoney((Number(clearstring(obj3.value))-Number(clearstring(obj1.value)))+"");
+		}
+		
+	}	
+
+	function formatmoney(m) {
+		var money, pmoney, mlength, z, textsize, i
+		textsize=20
+		pmoney=""
+		z=0
+		money=m
+		money=clearstring(money)
+		money=Number(money)
+		money=money+""
+		for(i=money.length-1;i>=0;i--)
+		{
+			z=z+1
+			if(z%3==0) 
+			{
+				pmoney=money.substr(i,1)+pmoney
+				if(i!=0)	pmoney=","+pmoney
+			}
+			else pmoney=money.substr(i,1)+pmoney
+		}
+		return pmoney
+	}
+
+	function clearstring(s) {
+		var pstr, sstr, iz
+		sstr=s
+		pstr=""
+		for(iz=0;iz<sstr.length;iz++)
+		{
+			if(!isNaN(sstr.substr(iz,1))||sstr.substr(iz,1)==".") pstr=pstr+sstr.substr(iz,1)
+		}
+		return pstr
+	}
+
+	function conf() {
+		var obj1=null;
+		var obj2=null;
+
+		obj1=document.getElementById("sctx").form.sctx;
+		obj2=document.getElementById("h_sctx");
+		for(i=0; i<12; i++) {
+			if(obj1[i].checked==true) {
+				obj2.value=obj1[i].value;
+				break;
+			}
+		}
+		obj1=document.getElementById("ctxsu2");
+		obj2=document.getElementById("h_ctxsu2");
+		obj2.value=obj1.value;
+				
+		nNowProcess = 1;
+		bodyhidden();
+
+		main=obj2.form;
+		main.target="procFrame";
+		main.action="Paper_Query.jsp?cmd=surveyinput";
+		main.submit();
+
+	}
+
+	function goDelete() {
+		var obj=null;
+		obj=document.getElementById("h_sctx");
+
+		main=obj.form;
+		main.target="procFrame";
+		main.action="Paper_Query.jsp?cmd=surveyDelete";
+		main.submit();
+	}
+		
+	function SendMoney() {
+		var obj1=document.getElementById("ctxmoney1");
+		var obj2=document.getElementById("smoneytot");
+
+		obj1.value = obj2.value;
+	}
+</script>
+
+<SCRIPT LANGUAGE=javascript>
+// 크레디앙 커몬 스크립트..
+
+var SU_COMMA = ',';
+
+// 문자열 치환
+function kreplace(str,str1,str2) {
+	
+	if (str == "" || str == null) return str;
+
+	while (str.indexOf(str1) != -1) {
+		str = str.replace(str1,str2);
+	}
+	return str;
+//	if (isNaN(str)) return str;
+//
+//	if (isFloat(str))
+//		return parseFloat(str);
+//	else
+//		return parseInt(str);
+}
+
+// 실수인지를 확인한다.
+function isFloat(str) {
+	return (str.indexOf('.') != -1);
+}
+
+// 숫자에 컴마를 삽입한다.
+function suwithcomma(su) {
+	
+	su = kreplace(su,',','');
+	
+	var rtn = '';
+	var fd = false;
+	// 입력된 값을 검사하여 숫자가 아닌 경우 0을 돌려준다.
+	// 숫자인 경우에는 문자열로 바꾼다.
+	if (isNaN(su)) {
+		alert("숫자를 입력하셔야 합니다.");
+		return 0;
+	} else {
+		su = new String(su);
+	}
+	
+	n = su.indexOf('.');
+	if (n<0) {
+		n = parseInt(su.length);
+	} else {
+		fd = true;
+	}
+	
+	while (su.indexOf('0') == 0 ) {
+		if (!fd) {
+			su = su.substring(1,su.length);
+		} else {
+			if (n > 1) {
+				su = su.substring(1, su.length);
+				n --;
+			} else {
+				return su;
+			}
+		}
+	}
+	cnt = parseInt(n / 3);
+//	alert(cnt);
+	mod = parseInt(n % 3);
+//	alert(mod);
+	if (mod>0) {
+		rtn = su.substring(0,mod);
+		if (cnt > 0) rtn = rtn + SU_COMMA;
+	}
+	for (i = 0; i < cnt ; i++) {
+		idx = i*3 + mod;
+		if (idx == 0) {
+			rtn = su.substring(idx,idx + 3);
+			if (cnt > 1) rtn = rtn + SU_COMMA;
+		} else {
+			rtn = rtn + su.substring(idx,idx + 3);
+			if (idx < n - 3) rtn = rtn + SU_COMMA;
+		}
+		
+	}
+	if (fd) rtn = rtn + su.substring(n,su.length);
+	return rtn;
+}
+
+// 숫자값, "."인지를 체크한다.
+function checkStringValid(src){
+	var len = src.value.length;
+
+	for(var i=0;i<len;i++){
+		if ((!isDecimal(src.value.charAt(i)) || src.value.charAt(i)==" ") && src.value.charAt(i)!="." ){
+			assortString(src,i);	
+			i=0;
+		}
+	}
+
+}
+
+// 숫자를 조립한다.
+function assortString(source,index){
+	var len = source.value.length;
+	var temp1 = source.value.substring(0,index);
+	var temp2 = source.value.substring(index+1,len);
+	source.value = temp1 + temp2;
+}
+
+// 10진수값을 가지고 있는지 확인한다.
+function isDecimal(number){
+	if (number>=0 && number<=9)  return true;
+	else return false;
+}
+
+// 소수점이 두개 이상입력되면 마지막 점은 삭제한다.
+function isPoint(src) {
+	if ((p1 = src.value.indexOf('.')) != -1) {
+		if ((p2 = src.value.indexOf('.',p1+1)) != -1) {
+			src.value = src.value.substring(0,p2);
+			return true;
+		}
+	}
+	return false;
+}
+
+// 키코드를 검사하고 콘트롤의 값에 컴마를 삽입한다.
+function sukeyup(src) {
+
+	if (sukeyup_n(src)) {
+		src.value = suwithcomma(src.value);
+		return true;
+	}
+	return false;
+}
+// 입력값을 검사한다.
+function sukeyup_n(src) {
+
+	keycode = window.event.keyCode;
+	//alert(isArrowKey(keycode));
+	if (isArrowKey(keycode) || keycode == 13 || isPoint(src)) {
+		return false;
+	}
+	checkStringValid(src);
+
+	if (src.value == '' || src.value == '0') {
+		src.value = 0;
+		return false;
+	}
+
+	if (src.value == '.' || src.value == '0.') {
+		src.value = '0.';
+		return false;
+	}
+
+	if(!isNaN(src.value)) {
+
+		if (src.value.indexOf('.') == 1) return false;
+		if (src.value.length <= 3) {
+			if (src.value.indexOf('0') == 0) 
+				src.value = src.value.substring(1,src.value.length);
+			return false;
+		}
+
+	}
+	return true;
+}
+
+// 누른 키가 화살표인지를 확인한다.
+function isArrowKey(key){
+	if(key>=37 && key<=40) return true;
+	else return false;
+}
+
+// 숫자 최대값 보다 큰 경우 최대값을 입력한다.
+// vmax : 최대값
+function isMax(src,vmax) {
+	
+	var sv = src.value;
+	var smax = suwithcomma(new String(vmax));
+	sv = parseFloat(kreplace(sv,',',''));
+	
+	if (sv > vmax) {
+		alert('최대값(' + smax + ')보다 큰 값이 입력 되었습니다.');
+		src.value = smax;
+		return false;
+	}
+	return true;
+}
+//
+//function suMax(src,vmax) {
+//	isMax(src,vmax);
+//	sukeyup(src);
+//}
+function suwithdec(src,dec) {
+	sukeyup(src);
+	wPoint(src,dec);
+}
+
+//
+function isMonth(src) {
+
+	onlyNumeric(src);
+	v = parseInt(src.value);
+	if ((v < 1) || (v > 12)) {
+		alert("월을 입력 하셔야 합니다.");
+		src.value = new Date().getMonth();
+		return false;
+	}
+	return true;
+	
+}
+
+// 숫자값만을 입력받는다.
+function onlyNumeric(src){
+	var len = src.value.length;
+
+	for(var i=0;i<len;i++){
+		if (!isDecimal(src.value.charAt(i)) || src.value.charAt(i)==" ") {
+			assortString(src,i);	
+			i=0;
+		}
+	}
+
+}
+
+// 지정된 소수점 이하의 수는 버린다.
+function wPoint(src,dec) {
+	if ((p = src.value.indexOf('.')) != -1) {
+		if (src.value.length > p + dec + 1) {
+			src.value = src.value.substring(0,p+dec+1);
+		}
+	}
+}
+</script>
+<body>
+	<div id="ajax_ready" style="position:absolute;top:1px;left:1px;width:60px;height:60px;display:none;z-index:99;"><img src="/hado/hado/wTools/img/ajax_ani.gif" border="0"></div>
+	<div id="ajax_bg" style="position:absolute;top:1px;left:1px;display:none;background:url(/hado/hado/wTools/img/ajax_bg.gif);z-index:51;"></div>
+
+	<div id="container">
+		<!-- Begin Header -->
+		<%@ include file="/hado/wTools/inc/WB_I_pageTop.jsp"%>
+		<!-- End Header -->
+		
+		<!-- Begin Main-menu -->
+		<jsp:include page="/hado/wTools/inc/WB_I_topMenu.jsp">
+		<jsp:param value="04" name="sel"/>
+		</jsp:include>
+		<!-- End Main-menu -->
+
+		<!-- Begin Contents -->
+		<div id="wrapper">
+			<div id="contents">
+				<!-- Begin Left-menu -->
+				<jsp:include page="/hado/wTools/inc/WB_I_Correct_LMenu.jsp">
+				<jsp:param value="005" name="sel"/>
+				</jsp:include>
+				<!-- End Left-menu -->
+
+				<div id="divContent">
+					<div id="searchContent">
+						<li class="subtitle">서면미발급 대상업체</li>
+						<li class="whereiam">HOME > 시정조치 > 시정조치 대상업체 > 서면미발급 대상업체</li>
+						<p></p>
+					</div>	
+					<div class="searchbox" id="searchbox">
+						<table class="searchboxtable">
+						<form action="" method="post" name="searchform">
+							<tr>
+								<th>조사년도</th>
+								<td><%
+									if( ckPermision.equals("T") || ckPermision.equals("M") ) {%>
+									<select name="cyear">
+										<%for(int xx=2011; xx<=st_Current_Year_n; xx++) {
+										String tmpCYear = ""+xx;%>
+											<option value="<%=xx%>" <%if( xx==st_Current_Year_n ){%>selected<%}%>><%=xx%>년</option>
+										<%}%>
+									</select>
+									<%} else {%>
+									<select name="cyear">
+										<%for(int xx=st_Current_Year_n-1; xx<=st_Current_Year_n; xx++) {
+										String tmpCYear = ""+xx;%>
+											<option value="<%=xx%>" <%if( xx==st_Current_Year_n ){%>selected<%}%>><%=xx%>년</option>
+										<%}%>
+									</select>
+									<%}%>
+								</td>
+								<th>회사명</th>
+								<td><input type="text" name="scomp" value="" size="25" onKeyPress="return entsub(event,this.form)" class="s_input"></td>
+								<th>관리번호</th>
+								<td><input type="text" name="unitid" value="" size="10" onKeyPress="return entsub(event,this.form)" class="s_input"></td>
+							</tr>
+							<!--tr>	
+								<th>세부업종</th>
+								<td colspan="3">
+									<select name="sgb">
+										<option value="">전체</option>
+									</select>
+								</td>
+							</tr-->
+							<tr>
+								<th>업종</th>
+								<td>
+									<select name="wgb" onchange="gbsel();">
+										<option value="">전체</option>
+										<option value="1">제조</option>
+										<option value="2">건설</option>
+										<option value="3">용역</option>
+									</select>
+								</td>
+								<th>담당사무소</th>
+								<td>
+									<select name="mareacode" id="mareacode" onchange="deptsel();">
+										<option value="">전체</option>
+										<!--option value="H">본부 기업협력국</option-->
+										<option value="C">기업거래정책과</option>
+										<option value="D">제조하도급개선과</option>
+										<option value="E">건설용역하도급개선과</option>
+										<option value="S">서울사무소</option>
+										<option value="B">부산사무소</option>
+										<option value="G">광주사무소</option>
+										<option value="J">대전사무소</option>
+										<option value="K">대구사무소</option>
+									</select>
+								</td>
+								<th>담당관</th>
+								<td>
+									<select name="mdeptname" id="mdeptname">
+										<option value="">전체</option>
+									</select>
+								</td>
+								
+							</tr>
+							<tr>
+								<th>정렬방법</th>
+								<td>
+									<select name="ssort">
+										<option value="">없음</option>
+										<option value="1">사업자명</option>
+										<option value="4">관리번호</option>
+										<option value="5">담당관</option>
+									</select>
+								</td>
+								<th>출력수</th>
+								<td>
+									<select name="mpagesize">
+										<option value="30">30개씩 출력</option>
+										<option value="50">50개씩 출력</option>
+										<option value="100">100개씩 출력</option>
+									</select>
+								</td>
+
+								<th><font style="color:#FF9933;font-weight:bold;">입력여부</font></th>
+								<td>
+									<select name="insertf">
+										<option value="">전체</option>
+										<option value="1">입력</option>
+										<option value="0">미입력</option>
+									</select>
+								</td>
+
+							</tr>
+							</form>
+						</table>
+					</div>
+					<div id="divButton">
+						<ul class="lt">
+							<li class="fr" id="divSrchWindow"><a href="javascript:divSearchWin();" class="sbutton">검색창 가리기</a></li>
+							<li class="fr"><a href="javascript:document.searchform.reset();" class="sbutton">검색 초기화</a></li>
+							<li class="fr"><a href="javascript:goSearch();" class="sbutton">검 색</a></li>
+						</ul>
+					</div>
+
+					<div id="divResult"></div>
+					<div id="divView" onMouseDown="f_DragMDown(this)"></div>
+					<div id="divViewInfo1" onMouseDown="f_DragMDown(this)"></div>
+					<div id="divViewInfo2" onMouseDown="f_DragMDown(this)"></div>
+					<div id="divViewInfo3" onMouseDown="f_DragMDown(this)"></div>
+				</div>
+				<iframe src="about:blank" width="1" height="1" id="procFrame" name="procFrame" style="display:none;"></iframe>
+			</div>
+		</div>
+		<!-- End Contents -->
+
+		<!-- Begin Footer -->
+		<%@ include file="/hado/wTools/inc/WB_I_Copyright.jsp"%>
+		<!-- End Footer -->
+	</div>
+</body>
+</html>

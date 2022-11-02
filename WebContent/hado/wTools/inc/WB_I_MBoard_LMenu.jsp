@@ -1,0 +1,113 @@
+<%@ page import="java.sql.*"%>
+<%@ page import="java.util.*"%>
+<%@ page import="ftc.util.*"%>
+
+<%
+/* -- Product Notice ----------------------------------------------------------------------------------*/
+/*  1. 프로젝트명 : 공정관리위원회 하도급거래 서면직권실태조사					                       */
+/*  2. 업체정보 :																					   */
+/*     - 업체명 : (주)로티스아이																	   */
+/*	   - Project Manamger : 정광식 부장 (pcxman99@naver.com)										   */
+/*     - 연락처 : T) 031-902-9188 F) 031-902-9189 H) 010-8329-9909									   */
+/*  3. 일자 : 2009년 5월																			   */
+/*  4. 최초작성자 및 일자 : (주)로티스아이 정광식 / 2011-10-18										   */
+/*  5. 업데이트내용 (내용 / 일자)																	   */
+/*  6. 비고																							   */
+/*		1) 웹관리툴 리뉴얼 / 2011-10-18																   */
+/*-----------------------------------------------------------------------------------------------------*/
+
+					String nSelLMenu = StringUtil.checkNull(request.getParameter("sel")).trim();
+
+					ArrayList arrLMenuContent = new ArrayList();
+					ArrayList arrLMenuType = new ArrayList();
+					ArrayList arrLMenuHref = new ArrayList();
+					ArrayList arrLMenuTarget = new ArrayList();
+					ArrayList arrLMenuPermision = new ArrayList();
+
+					String ckPermision = session.getAttribute("ckPermision") + "";
+					int nPermision = 1;
+					if( ckPermision.equals("T") ) {
+						nPermision = 4;
+					} else if( ckPermision.equals("M") ) {
+						nPermision = 3;
+					} else if( ckPermision.equals("V") ) {
+						nPermision = 2;
+					}
+					int tmpPermision = 1;
+
+					/* 권한설정방법
+					1: 일반등급 (P)
+					2: 조회등급 (V)
+					3: 관리등급 (M)
+					4: 시스템관리등급 (T) */
+
+					arrLMenuType.add("F");	arrLMenuContent.add("공지사항"); arrLMenuHref.add("#"); arrLMenuTarget.add(""); arrLMenuPermision.add("1");
+					arrLMenuType.add("C");	arrLMenuContent.add("공지사항"); arrLMenuHref.add("/hado/hado/wTools/siteMng/index.jsp"); arrLMenuTarget.add(""); arrLMenuPermision.add("1");
+				%>
+				<div id="menu_v" class="menu_v">
+					<ul>
+		<%for(int lmj=0; lmj<arrLMenuType.size(); lmj++ ) {
+			if( arrLMenuType.get(lmj).equals("F") ) {
+				if( lmj>1 ) {%>
+						</ul><%}%>
+						<li><a href="<%=arrLMenuHref.get(lmj)%>"><span><%=arrLMenuContent.get(lmj)%></span></a>
+						<ul>
+			<%} else {%>
+						<% tmpPermision = Integer.parseInt(arrLMenuPermision.get(lmj)+"");
+						if( tmpPermision <= nPermision ) {%>
+							<li <%if( lmj==Integer.parseInt(nSelLMenu) ) {%>class="active"<%}%>><a href="<%=arrLMenuHref.get(lmj)%>" <%if(  !arrLMenuTarget.get(lmj).equals("") ) {%> target="<%= arrLMenuTarget.get(lmj)%>"<%}%>><span><%=arrLMenuContent.get(lmj)%></span></a></li>
+						<%}%>
+			<%}
+		}%>
+						</ul>
+					</ul>
+				</div>
+				<script type="text/javascript" src="/hado/hado/wTools/inc/jquery.js"></script>
+				<script type="text/javascript">
+				jQuery(function($){
+					
+					// Side Menu
+					var menu_v = $('div.menu_v');
+					var sItem = menu_v.find('>ul>li');
+					var ssItem = menu_v.find('>ul>li>ul>li');
+					var lastEvent = null;
+					
+					sItem.find('>ul').css('display','none');
+					menu_v.find('>ul>li>ul>li[class=active]').parents('li').attr('class','active');
+					menu_v.find('>ul>li[class=active]').find('>ul').css('display','block');
+
+					function menu_vToggle(event){
+						var t = $(this);
+						
+						if (this == lastEvent) return false;
+						lastEvent = this;
+						setTimeout(function(){ lastEvent=null }, 200);
+						
+						if (t.next('ul').is(':hidden')) {
+							sItem.find('>ul').slideUp(100);
+							t.next('ul').slideDown(100);
+						} else if(!t.next('ul').length) {
+							sItem.find('>ul').slideUp(100);
+						} else {
+							t.next('ul').slideUp(100);
+						}
+						
+						if (t.parent('li').hasClass('active')){
+							t.parent('li').removeClass('active');
+						} else {
+							sItem.removeClass('active');
+							t.parent('li').addClass('active');
+						}
+					}
+					sItem.find('>a').click(menu_vToggle).focus(menu_vToggle);
+					
+					function subMenuActive(){
+						ssItem.removeClass('active');
+						$(this).parent(ssItem).addClass('active');
+					}; 
+					ssItem.find('>a').click(subMenuActive).focus(subMenuActive);
+					
+					//icon
+					menu_v.find('>ul>li>ul').prev('a').append('<span class="i"></span>');
+				});
+				</script>

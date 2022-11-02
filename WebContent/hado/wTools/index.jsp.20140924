@@ -1,0 +1,286 @@
+<%@ page session="true" language="java" contentType="text/html; charset=euc-kr" pageEncoding="euc-kr"%>
+<%@ page import="java.io.*"%>
+<%@ page import="java.sql.*"%>
+<%@ page import="java.util.*"%>
+<%@ page import="ftc.util.*"%>
+
+<%@ page import="ftc.db.ConnectionResource"%>
+<%@ page import="ftc.db.ConnectionResource2"%>
+
+<%@ include file="/hado/wTools/inc/WB_I_Global.jsp"%>
+
+<%
+/* -- Product Notice ----------------------------------------------------------------------------------*/
+/*  1. 프로젝트명 : 공정관리위원회 하도급거래 서면직권실태조사					                       */
+/*  2. 업체정보 :																					   */
+/*     - 업체명 : (주)로티스아이																	   */
+/*	   - Project Manamger : 정광식 부장 (pcxman99@naver.com)										   */
+/*     - 연락처 : T) 031-902-9188 F) 031-902-9189 H) 010-8329-9909									   */
+/*  3. 일자 : 2009년 5월																			   */
+/*  4. 최초작성자 및 일자 : (주)로티스아이 정광식 / 2011-10-18										   */
+/*  5. 업데이트내용 (내용 / 일자)																	   */
+/*  6. 비고																							   */
+/*		1) 웹관리툴 리뉴얼 / 2011-10-18																   */
+/*-----------------------------------------------------------------------------------------------------*/
+
+/*---------------------------------------- Variable Difinition ----------------------------------------*/
+	ConnectionResource resource = null;
+	Connection conn = null;
+	PreparedStatement pstmt = null;
+	ResultSet rs = null;
+
+	String sLoginING = "f";
+
+	String SSOcvno = StringUtil.checkNull(request.getParameter("cvno")).trim();
+
+	String sCenterName = "";
+	String sDeptName = "";
+	String sUserName = "";
+	String sPhoneNo = "";
+	String sPermision = "";
+
+	// 관리자 안내용 배열
+	ArrayList arrCenterName = new ArrayList();
+	ArrayList arrDeptName = new ArrayList();
+	ArrayList arrUserName = new ArrayList();
+	ArrayList arrPhoneNo = new ArrayList();
+
+	if( SSOcvno == null || SSOcvno.equals("") ) {
+		if( session.getAttribute("ckSSOcvno")!=null )
+		{
+			SSOcvno = ""+session.getAttribute("ckSSOcvno");
+		}
+	}
+/*-----------------------------------------------------------------------------------------------------*/
+
+/*=================================== Record Selection Processing =====================================*/
+	if( SSOcvno != null && (!SSOcvno.equals("")) ) {
+		try {
+			resource = new ConnectionResource();
+			conn = resource.getConnection();
+
+			StringBuffer sbSQLs = new StringBuffer();
+			
+			sbSQLs.append("SELECT * \n");
+			sbSQLs.append("FROM HADO_TB_FTC_USER \n");
+			sbSQLs.append("WHERE CVSNO=?");
+
+			pstmt = conn.prepareStatement(sbSQLs.toString());
+			pstmt.setString(1,SSOcvno);
+			rs = pstmt.executeQuery();
+
+			while(rs.next()) {
+				sCenterName = new String(StringUtil.checkNull(rs.getString("CENTER_NAME")).trim().getBytes("ISO8859-1"), "EUC-KR" );
+				sDeptName = new String(StringUtil.checkNull(rs.getString("DEPT_NAME")).trim().getBytes("ISO8859-1"), "EUC-KR" );
+				sUserName = new String(StringUtil.checkNull(rs.getString("USER_NAME")).trim().getBytes("ISO8859-1"), "EUC-KR" );
+				sPhoneNo = StringUtil.checkNull(rs.getString("PHONE_NO")).trim();
+				sPermision = StringUtil.checkNull(rs.getString("PERMISION")).trim();
+
+				session.setAttribute("ckSSOcvno",SSOcvno+"");
+				session.setAttribute("ckCenterName",sCenterName+"");
+				session.setAttribute("ckDeptName",sDeptName+"");
+				session.setAttribute("ckUserName",sUserName+"");
+				session.setAttribute("ckPhoneNo",sPhoneNo+"");
+				session.setAttribute("ckPermision",sPermision+"");
+
+				sLoginING = "t";
+			}
+			rs.close();
+
+			// 로그인 실패시 담당자 정보 가져오기
+			if( sLoginING.equals("f") ) {
+				StringBuffer sbSQLs2 = new StringBuffer();
+				
+				sbSQLs2.append("SELECT * \n");
+				sbSQLs2.append("FROM HADO_TB_FTC_USER \n");
+				sbSQLs2.append("WHERE Permision='M' \n");
+				sbSQLs2.append("ORDER BY CVSNO");
+
+				pstmt = conn.prepareStatement(sbSQLs2.toString());
+				rs = pstmt.executeQuery();
+
+				while( rs.next() ) {
+					arrCenterName.add( new String( StringUtil.checkNull(rs.getString("Center_Name")).trim().getBytes("ISO8859-1"), "EUC-KR" ) );
+					arrDeptName.add( new String( StringUtil.checkNull(rs.getString("Dept_Name")).trim().getBytes("ISO8859-1"), "EUC-KR" ) );
+					arrUserName.add( new String( StringUtil.checkNull(rs.getString("User_Name")).trim().getBytes("ISO8859-1"), "EUC-KR" ) );
+					arrPhoneNo.add( new String( StringUtil.checkNull(rs.getString("Phone_No")).trim().getBytes("ISO8859-1"), "EUC-KR" ) );
+				}
+				rs.close();
+			}
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		finally {
+			if ( rs != null ) try{rs.close();}catch(Exception e){}
+			if ( pstmt != null ) try{pstmt.close();}catch(Exception e){}
+			if ( conn != null ) try{conn.close();}catch(Exception e){}
+			if ( resource != null ) resource.release();
+		}
+	} else {
+		sLoginING = "f";
+	}
+/*=====================================================================================================*/
+%>
+
+<html>
+<head>
+	<title>【관리】하도급거래 서면실태조사</title>
+	<link rel="stylesheet" href="/hado/hado/wTools/style.css" type="text/css">
+</head>
+
+<body>
+<%if(sLoginING.equals("t")) {%>
+	<div id="container">
+		<!-- Begin Header -->
+		<%@ include file="/hado/wTools/inc/WB_I_pageTop.jsp"%>
+		<!-- End Header -->
+		
+		<!-- Begin Main-menu -->
+		<jsp:include page="/hado/wTools/inc/WB_I_topMenu.jsp">
+		<jsp:param value="01" name="sel"/>
+		</jsp:include>
+		<!-- End Main-menu -->
+
+		<!-- Begin Contents -->
+		<div id="wrapper">
+			<!--div id="contents">
+				<div id="mcontent1">
+					<li class="mcontents1">
+						<ul class="lt mz">
+							<li class="lt">▷ 서면조사 대상업체</li>
+							<li class="lt">▷ 년도별 조사표</li>
+							<li class="lt">▷ 조사표 제출현황</li>
+							<li class="lt">▷ 조사결과 분석</li>
+						</ul>
+					</li>
+					<li class="mcontentsbar"></li>
+					<li class="mcontents2">
+						<ul class="mz">
+							<li>□ <a href="Oent/index.jsp">서면 실태조사 대상업체</a></li>
+							<li>□ <a href="Oent/Oent_Submit_Total.jsp">조사표 제출현황(전체업종)</a></li>
+							<li>□ <a href="Oent/Oent_Submit_Place.jsp">사무소별 제출현황</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_01.jsp">하도급단가 인하 여부</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_11.jsp">하도급대금 결정 방법</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_12.jsp">하도급대금 지급방식</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_13.jsp">하도급대금 결제주기</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_14.jsp">어음의 평균결제기간</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_25.jsp">위반행위 유형별 비율</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_28.jsp">위반행위 유형별 점유율</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_26.jsp">업체별 위반현황</a></li>
+							<li>□ <a href="Oent/Status/Oent_Violate_16.jsp">표준계약서 사용여부</a></li>
+						</ul>
+					</li>
+				</div>
+				<div id="mcontent2">
+					<li class="mcontents1" style="margin-left:10px;">
+						<ul class="lt mz">
+							<li class="lt">▷ 서면조사 대상업체</li>
+							<li class="lt">▷ 년도별 조사표</li>
+							<li class="lt">▷ 조사표 제출현황</li>
+							<li class="lt">▷ 조사결과 분석</li>
+						</ul>
+					</li>
+					<li class="mcontentsbar"></li>
+					<li class="mcontents2">
+						<ul class="mz">
+							<li>□ 서면 실태조사 대상업체</li>
+							<li>□ 조사표 제출현황(전체업종)</li>
+							<li>□ 사무소별 제출현황</li>
+							<li>□ 하도급단가 인하 여부</li>
+							<li>□ 하도급대금 결정 방법</li>
+							<li>□ 하도급대금 지급방식</li>
+							<li>□ 하도급대금 결제주기</li>
+							<li>□ 어음의 평균결제기간</li>
+							<li>□ 업종별 위반행위수 현황</li>
+							<li>□ 위반행위 유형별 비율</li>
+							<li>□ 업체별 위반현황</li>
+							<li>□ 표준계약서 사용여부</li>
+						</ul>
+					</li>
+				</div>
+				<div id="mcontent3">
+					<li class="mcontents1">
+						<ul class="lt mz">
+							<li class="lt">▷ 법위반혐의 내역</li>
+							<li class="lt">▷ 시정대상업체</li>
+							<li class="lt">▷ 입력현황</li>
+						</ul>
+					</li>
+					<li class="mcontentsbar"></li>
+					<li class="mcontents2">
+						<ul class="mz">
+							<li>□ 서면 실태조사 대상업체</li>
+							<li>□ 조사표 제출현황(전체업종)</li>
+							<li>□ 사무소별 제출현황</li>
+							<li>□ 하도급단가 인하 여부</li>
+							<li>□ 하도급대금 결정 방법</li>
+							<li>□ 하도급대금 지급방식</li>
+							<li>□ 하도급대금 결제주기</li>
+							<li>□ 어음의 평균결제기간</li>
+							<li>□ 업종별 위반행위수 현황</li>
+							<li>□ 위반행위 유형별 비율</li>
+							<li>□ 업체별 위반현황</li>
+							<li>□ 표준계약서 사용여부</li>
+						</ul>
+					</li>
+				</div>
+				<div id="mcontent4">
+					<li class="mcontents1" style="margin-left:10px;">
+						<ul class="lt mz">
+							<li class="lt"></li>
+							<li class="lt"></li>
+							<li class="lt">▷ 조사표 제출현황</li>
+							<li class="lt">▷ 조사결과 분석</li>
+						</ul>
+					</li>
+					<li class="mcontentsbar"></li>
+					<li class="mcontents2">
+						<ul class="mz">
+							<li>□ 서면 실태조사 대상업체</li>
+							<li>□ 조사표 제출현황(전체업종)</li>
+							<li>□ 사무소별 제출현황</li>
+							<li>□ 하도급단가 인하 여부</li>
+							<li>□ 하도급대금 결정 방법</li>
+							<li>□ 하도급대금 지급방식</li>
+							<li>□ 하도급대금 결제주기</li>
+							<li>□ 어음의 평균결제기간</li>
+							<li>□ 업종별 위반행위수 현황</li>
+							<li>□ 위반행위 유형별 비율</li>
+							<li>□ 업체별 위반현황</li>
+							<li>□ 표준계약서 사용여부</li>
+						</ul>
+					</li>
+				</div>
+				<div id="mcontent"></div>
+			</div-->
+		</div>
+		<!-- End Contents -->
+
+		<!-- Begin Footer -->
+		<%@ include file="/hado/wTools/inc/WB_I_Copyright.jsp"%>
+		<!-- End Footer -->
+	</div>
+<%} else {%>
+	<div id="notLoginInfo">
+		<ul class="oline4">
+			<li class="errif">사용권한이 없습니다.</li>
+			<li class="errif">하도급거래 서면실태조사 관리자에게 문의하세요.</li>
+			<li class="errif">&nbsp;</li>
+			<%if( arrCenterName.size()>0 ) {%>
+				<li class="errifc">
+					<ul>
+			<%	for(int j=0; j<arrCenterName.size(); j++) {
+					out.print( "<li class=errifc>"+arrCenterName.get(j)+"/"+arrDeptName.get(j)+" "+arrUserName.get(j)+" ("+arrPhoneNo.get(j)+")</li>");
+				}
+			%>
+					</ul>
+				</li>
+				<li class="errif">&nbsp;</li>
+			<%}%>
+			<li class="errif"><a href="javascript:self.close();" class="closebutton" /></li>
+		</ul>
+	</div>
+<%}%>
+</body>
+</html>

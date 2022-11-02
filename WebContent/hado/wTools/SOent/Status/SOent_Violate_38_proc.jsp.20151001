@@ -1,0 +1,385 @@
+<%@ page session="true" language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+<%@ page import="java.sql.*"%>
+<%@ page import="java.util.*"%>
+<%@ page import="ftc.util.*"%>
+
+<%@ page import="ftc.db.ConnectionResource"%>
+
+<%@ include file="/hado/wTools/inc/WB_I_Global.jsp"%>
+<%@ include file="/hado/wTools/inc/WB_I_chkMngSession.jsp"%>
+
+<%@ page import="java.text.DecimalFormat"%>
+
+<%
+/*=======================================================*/
+/* ������Ʈ��		: �ϵ��ްŷ� ����������� ������ ���� ���߿뿪 ���								   */
+/* ���α׷���		: SOent_Violate_38.jsp																				   */
+/* ���α׷�����	: ������ �������������� ��Ȳ(���޻���� ����) ����ڷ� ó�� ������			*/
+/* ���α׷�����	: 1.0.0-2015																				                        */
+/* �����ۼ�����	: 2015�� 09�� 01��																                            */
+/* �ۼ� �̷�       :                                                                                                                           */
+/*-------------------------------------------------------------------------------------------------------------- */
+/*	�ۼ�����		   �ۼ��ڸ�				����
+/*-------------------------------------------------------------------------------------------------------------- */
+/*	2015-09-01	������       ������ �ֽ�ȭ(�ּ�, ���ʿ��� �ڵ� ����, ������ �ڵ� ����)     */
+/*=======================================================*/
+
+/*---------------------------------------- Variable Difinition ----------------------------------------*/
+	String tt = request.getParameter("tt")==null? "":request.getParameter("tt").trim();
+	String comm = request.getParameter("comm")==null? "":request.getParameter("comm").trim();
+	
+	ConnectionResource resource = null;
+	Connection conn = null;
+	PreparedStatement pstmt = null;
+	ResultSet rs = null;
+	
+	String sSQLs = "";
+	String sField = "";
+	String tmpStr = "";
+	
+	// �����׸� �迭
+	ArrayList money_nm = new ArrayList();
+	ArrayList money_cd = new ArrayList();
+	ArrayList no_money_nm = new ArrayList();
+	ArrayList no_money_cd = new ArrayList();
+
+	String[][] arrData = new String[50][41];
+	float[] arrSum = new float[41];
+	
+	int nLoop = 1;
+	int i = 0;
+	int j = 0;
+	int nFieldCNTV = 0;
+	int money_cnt = 0;
+	int no_money_cnt = 0;
+
+	float tmpSum = 0F;
+
+	int sStartYear = 2000;
+
+	java.util.Calendar cal = java.util.Calendar.getInstance();
+
+	DecimalFormat formater = new java.text.DecimalFormat("###,###,###,###,###,###,###,##0.0");
+	DecimalFormat formater2 = new java.text.DecimalFormat("###,###,###,###,###,###,###,##0");
+/*-----------------------------------------------------------------------------------------------------*/
+/*=================================== Record Selection Processing =====================================*/
+	String tmpYear = request.getParameter("cyear")==null? "":request.getParameter("cyear").trim();
+	if( !tmpYear.equals("") ) {
+		session.setAttribute("cyear", tmpYear);
+	} else {
+		session.setAttribute("cyear", st_Current_Year);
+	}
+	
+	if( tt.equals("start") ) {
+		session.setAttribute("wgb", "1");
+	}
+	if( comm.equals("search") ) {
+		session.setAttribute("wgb", request.getParameter("wgb")==null? "":request.getParameter("wgb").trim());
+	}
+
+	// �迭�ʱ�ȭ
+	for(int x=1; x<=40; x++) {
+		arrSum[x] = 0F;
+	}
+
+	int currentYear = st_Current_Year_n;
+	//System.out.print("\n currentYear : " + currentYear + "\n\n");
+
+	currentYear = Integer.parseInt(session.getAttribute("cyear")+"");
+
+	int endCurrentYear = st_Current_Year_n;
+
+	try {
+		resource = new ConnectionResource();
+		conn = resource.getConnection();
+		
+		if( session.getAttribute("wgb").equals("1") ) {
+			sSQLs="SELECT SOent_Q_CDNM, rank, money_gb, \n";
+			sSQLs+="('[' || RTRIM(MIN(soent_q_cd)) || '-' || RTRIM(MIN(soent_q_gb)) || ']') Q_Code \n";
+			sSQLs+="FROM HADO_TB_SOent_question \n";
+			sSQLs+="WHERE oent_gb = '1' AND Current_Year='"+currentYear+"' AND (Money_GB='1' OR Money_GB='2') \n";
+			sSQLs+="GROUP BY soent_q_cdnm,money_gb, rank \n";
+			sSQLs+="ORDER BY money_gb, rank \n";
+		} else if( session.getAttribute("wgb").equals("2") ) {
+			sSQLs="SELECT SOent_Q_CDNM, rank, money_gb, \n";
+			sSQLs+="('[' || RTRIM(MIN(soent_q_cd)) || '-' || RTRIM(MIN(soent_q_gb)) || ']') Q_Code \n";
+			sSQLs+="FROM HADO_TB_SOent_question \n";
+			sSQLs+="WHERE oent_gb = '2' AND Current_Year='"+currentYear+"' AND (Money_GB='1' OR Money_GB='2') \n";
+			sSQLs+="GROUP BY soent_q_cdnm,money_gb, rank \n";
+			sSQLs+="ORDER BY money_gb, rank \n";
+		} else if( session.getAttribute("wgb").equals("3") ) {
+			sSQLs="SELECT SOent_Q_CDNM, rank, money_gb, \n";
+			sSQLs+="('[' || RTRIM(MIN(soent_q_cd)) || '-' || RTRIM(MIN(soent_q_gb)) || ']') Q_Code \n";
+			sSQLs+="FROM HADO_TB_SOent_question \n";
+			sSQLs+="WHERE oent_gb = '3' AND Current_Year='"+currentYear+"' AND (Money_GB='1' OR Money_GB='2') \n";
+			sSQLs+="GROUP BY soent_q_cdnm,money_gb, rank \n";
+			sSQLs+="ORDER BY money_gb, rank \n";
+		}
+		
+		//System.out.print(sSQLs);
+		pstmt = conn.prepareStatement(sSQLs);
+		rs = pstmt.executeQuery();
+
+		i = 1;
+		j = 1;
+		while( rs.next() ) {
+			tmpStr = rs.getString("money_gb");
+			if( tmpStr.trim().equals("1") ) {
+				money_nm.add(new String( StringUtil.checkNull(rs.getString("SOent_Q_CDNM")).trim().getBytes("ISO8859-1"), "utf-8" ));
+				money_cd.add(StringUtil.checkNull(rs.getString("Q_Code")).trim());
+				i++;
+			} else {
+				no_money_nm.add(new String( StringUtil.checkNull(rs.getString("SOent_Q_CDNM")).trim().getBytes("ISO8859-1"), "utf-8" ));
+				no_money_cd.add(StringUtil.checkNull(rs.getString("Q_Code")).trim());
+				j++;
+			}
+		}
+		rs.close();
+	}
+	catch(Exception e){
+		e.printStackTrace();
+	}
+	finally {
+		if ( rs != null ) try{rs.close();}catch(Exception e){}
+		if ( pstmt != null ) try{pstmt.close();}catch(Exception e){}
+		if ( conn != null ) try{conn.close();}catch(Exception e){}
+		if ( resource != null ) resource.release();
+	}
+	money_cnt = i - 1;
+	no_money_cnt = j - 1;
+	nFieldCNTV = money_cnt + no_money_cnt;
+
+	if( !tt.equals("start") ) {
+		/* 2012�� ������� ���� DB Table �и� ����ó�� ���� ============================================================> */
+		/* ������Ʈ ���� : 2012�� 11�� 13��
+		   �ۼ��� : ������
+		   ��� : Database ��������� ���Ͽ� 2012����� ������� ���̺� �и�
+				  HADO_TB_Oent --> HADO_TB_Oent_2012 */
+		String currentOent = "HADO_TB_Oent";
+		if( currentYear>2011 ) {
+			currentOent = "HADO_TB_Oent_"+currentYear;
+		}
+		/* <============================================================== 2012�� ������� ���� DB Table �и� ����ó�� �� */
+
+		if( currentYear >= 2012 ) {
+			sSQLs = "SELECT D.COMMON_CD||'('||D.COMMON_NM||')' TYPECD,C.* FROM ( \n" +
+				"SELECT OENT_TYPE,SUM(SURVEY_MONEY_TOTAL+SURVEY_BI_TOTAL) SURVEY_CNT, \n" +
+				"SUM(D1) D1,SUM(D2) D2,SUM(D3) D3,SUM(D4) D4,SUM(D5) D5,SUM(D6) D6,SUM(D7) D7, \n" +
+				"SUM(D8) D8,SUM(D9) D9,SUM(D10) D10,SUM(D11) D11,SUM(D12) D12,SUM(D13) D13,SUM(D14) D14, \n" +
+				"SUM(D15) D15,SUM(D16) D16, \n"+
+				"SUM(A1) A1,SUM(A2) A2,SUM(A3) A3,SUM(A4) A4,SUM(A5) A5,SUM(A6) A6,SUM(A7) A7, \n" +
+				"SUM(A8) A8,SUM(A9) A9,SUM(A10) A10,SUM(A11) A11,SUM(A12) A12,SUM(A13) A13,SUM(A14) A14, \n" +
+				"SUM(A15) A15,SUM(A16) A16,SUM(A17) A17,SUM(A18) A18,SUM(A19) A19,SUM(A20) A20 \n"+
+				"FROM ( \n" +
+				"SELECT A.*,B.OENT_TYPE FROM  \n" +
+				"(SELECT * FROM HADO_TB_SOENT_SURVEY_RESULT  \n" +
+				"WHERE OENT_GB='" + session.getAttribute("wgb") + "' AND CURRENT_YEAR='" + currentYear + "') A \n" +
+				"LEFT JOIN "+currentOent+" B ON A.CURRENT_YEAR=B.CURRENT_YEAR AND A.OENT_GB=B.OENT_GB \n" +
+				"AND SUBSTR(A.MNG_NO,1,8)=B.MNG_NO \n" +
+				") VT_TABLE GROUP BY OENT_TYPE) C LEFT JOIN COMMON_CD D \n" +
+				"ON C.OENT_TYPE=D.COMMON_CD AND D.Common_GB='010' ORDER BY C.OENT_TYPE \n";
+		} else if( currentYear == 2011 ) {
+			sSQLs = "SELECT D.COMMON_CD||'('||D.COMMON_NM||')' TYPECD,C.* FROM ( " +
+				"SELECT OENT_TYPE,SUM(SURVEY_MONEY_TOTAL+SURVEY_BI_TOTAL) SURVEY_CNT, " +
+				"SUM(D1) D1,SUM(D2) D2,SUM(D3) D3,SUM(D4) D4,SUM(D5) D5,SUM(D6) D6,SUM(D7) D7, " +
+				"SUM(D8) D8,SUM(D9) D9,SUM(D10) D10,SUM(D11) D11,SUM(D12) D12,SUM(D13) D13,SUM(D14) D14, " +
+				"SUM(A1) A1,SUM(A2) A2,SUM(A3) A3,SUM(A4) A4,SUM(A5) A5,SUM(A6) A6,SUM(A7) A7, " +
+				"SUM(A8) A8,SUM(A9) A9,SUM(A10) A10,SUM(A11) A11,SUM(A12) A12,SUM(A13) A13,SUM(A14) A14,0 A15 " +
+				"FROM ( " +
+				"SELECT A.*,B.OENT_TYPE FROM  " +
+				"(SELECT * FROM HADO_TB_SOENT_SURVEY_RESULT  " +
+				"WHERE OENT_GB='" + session.getAttribute("wgb") + "' AND CURRENT_YEAR='" + currentYear + "') A " +
+				"LEFT JOIN HADO_TB_OENT B ON A.CURRENT_YEAR=B.CURRENT_YEAR AND A.OENT_GB=B.OENT_GB " +
+				"AND SUBSTR(A.MNG_NO,1,9)=B.MNG_NO " +
+				") VT_TABLE GROUP BY OENT_TYPE) C LEFT JOIN COMMON_CD D " +
+				"ON C.OENT_TYPE=D.COMMON_CD AND D.ADDON_GB='" + session.getAttribute("wgb") + "' ORDER BY C.OENT_TYPE";
+		} else {
+			sSQLs = "SELECT D.COMMON_CD||'('||D.COMMON_NM||')' TYPECD,C.* FROM ( " +
+				"SELECT OENT_TYPE,SUM(SURVEY_MONEY_TOTAL+SURVEY_BI_TOTAL) SURVEY_CNT, " +
+				"SUM(D1) D1,SUM(D2) D2,SUM(D3) D3,SUM(D4) D4,SUM(D5) D5,SUM(D6) D6,SUM(D7) D7, " +
+				"SUM(D8) D8,SUM(D9) D9,SUM(D10) D10,SUM(D11) D11,SUM(D12) D12,SUM(D13) D13,SUM(D14) D14, " +
+				"SUM(A1) A1,SUM(A2) A2,SUM(A3) A3,SUM(A4) A4,SUM(A5) A5,SUM(A6) A6,SUM(A7) A7, " +
+				"SUM(A8) A8,SUM(A9) A9,SUM(A10) A10,SUM(A11) A11,SUM(A12) A12,SUM(A13) A13,SUM(A14) A14 " +
+				"FROM ( " +
+				"SELECT A.*,B.OENT_TYPE FROM  " +
+				"(SELECT * FROM HADO_TB_SOENT_SURVEY_RESULT  " +
+				"WHERE OENT_GB='" + session.getAttribute("wgb") + "' AND CURRENT_YEAR='" + currentYear + "') A " +
+				"LEFT JOIN HADO_TB_OENT B ON A.CURRENT_YEAR=B.CURRENT_YEAR AND A.OENT_GB=B.OENT_GB " +
+				"AND SUBSTR(A.MNG_NO,1,10)=B.MNG_NO " +
+				") VT_TABLE GROUP BY OENT_TYPE) C LEFT JOIN COMMON_CD D " +
+				"ON C.OENT_TYPE=D.COMMON_CD AND D.ADDON_GB='" + session.getAttribute("wgb") + "' ORDER BY C.OENT_TYPE";
+		}	
+		
+		out.print(sSQLs);
+	
+		try {
+			resource = new ConnectionResource();
+			conn = resource.getConnection();
+
+			pstmt = conn.prepareStatement(sSQLs);
+			rs = pstmt.executeQuery();
+
+			nLoop = 1;
+			while( rs.next() ) {
+				arrData[nLoop][1] = new String( StringUtil.checkNull(rs.getString("TYPECD")).trim().getBytes("ISO8859-1"), "utf-8" );
+				arrData[nLoop][2] = "0";
+				for(int x=1; x<=14; x++) {
+					arrData[nLoop][x+2] = rs.getString("D"+x);
+					arrData[nLoop][2] = "" + (Float.parseFloat(arrData[nLoop][2]) + Float.parseFloat(arrData[nLoop][x+2]));
+				}
+
+			if( currentYear >= 2015 ) {
+				arrData[nLoop][20] = "0";
+				for(int x=1; x<=19; x++) {
+					arrData[nLoop][x+20] = rs.getString("A"+x);
+					arrData[nLoop][20] = "" + (Float.parseFloat(arrData[nLoop][20]) + Float.parseFloat(arrData[nLoop][x+20]));
+				}
+				for(int x=2; x<=39; x++) {
+					arrSum[x] = arrSum[x] + Float.parseFloat(arrData[nLoop][x]);
+				}
+			} else if( currentYear >= 2014 ) {
+				arrData[nLoop][17] = "0";
+				for(int x=1; x<=16; x++) {
+					arrData[nLoop][x+17] = rs.getString("A"+x);
+					arrData[nLoop][17] = "" + (Float.parseFloat(arrData[nLoop][17]) + Float.parseFloat(arrData[nLoop][x+17]));
+				}
+				for(int x=2; x<=33; x++) {
+					arrSum[x] = arrSum[x] + Float.parseFloat(arrData[nLoop][x]);
+				}
+			} else if( currentYear >= 2012 ) {
+				arrData[nLoop][17] = "0";
+				for(int x=1; x<=16; x++) {
+					arrData[nLoop][x+17] = rs.getString("A"+x);
+					arrData[nLoop][17] = "" + (Float.parseFloat(arrData[nLoop][17]) + Float.parseFloat(arrData[nLoop][x+17]));
+				}
+				for(int x=2; x<=33; x++) {
+					arrSum[x] = arrSum[x] + Float.parseFloat(arrData[nLoop][x]);
+				}
+			} else if( currentYear == 2011 ) {
+				arrData[nLoop][17] = "0";
+				for(int x=1; x<=15; x++) {
+					arrData[nLoop][x+17] = rs.getString("A"+x);
+					arrData[nLoop][17] = "" + (Float.parseFloat(arrData[nLoop][17]) + Float.parseFloat(arrData[nLoop][x+17]));
+				}
+				for(int x=2; x<=32; x++) {
+					arrSum[x] = arrSum[x] + Float.parseFloat(arrData[nLoop][x]);
+				}
+			} else {
+				arrData[nLoop][17] = "0";
+				for(int x=1; x<=14; x++) {
+					arrData[nLoop][x+17] = rs.getString("A"+x);
+					arrData[nLoop][17] = "" + (Float.parseFloat(arrData[nLoop][17]) + Float.parseFloat(arrData[nLoop][x+17]));
+				}
+				for(int x=2; x<=31; x++) {
+					arrSum[x] = arrSum[x] + Float.parseFloat(arrData[nLoop][x]);
+				}
+			}
+				
+
+				nLoop++;
+			}
+			rs.close();
+			nLoop--;
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		finally {
+			if ( rs != null ) try{rs.close();}catch(Exception e){}
+			if ( pstmt != null ) try{pstmt.close();}catch(Exception e){}
+			if ( conn != null ) try{conn.close();}catch(Exception e){}
+			if ( resource != null ) resource.release();
+		}
+
+		//System.out.print("\n nLoop : " + nLoop + "\n\n"); 2011��:22
+	}
+%>
+
+<script language="javascript">
+content = "";
+
+content+="<table class='resultTable'>";
+content+="	<tr>";
+content+="		<th rowspan=3>����</th>";
+content+="		<th rowspan=3>����������</th>";
+content+="		<th colspan=<%=money_cnt+1%>>��ݰ��û���(<%=money_cnt%>)</th>";
+content+="		<th colspan=<%=no_money_cnt+1%>>���ݰ��û���(<%=no_money_cnt%>)</th>";
+content+="	</tr>";
+content+="	<tr>";
+	<%for(int ni=1; ni<=money_cnt; ni++) {%>
+content+="		<th><%=money_nm.get(ni-1)%></th>";
+	<%}%>
+content+="		<th rowspan=2>�Ұ�</th>";
+	<%for(int ni=1; ni<=no_money_cnt; ni++) {%>
+content+="		<th><%=no_money_nm.get(ni-1)%></th>";
+	<%}%>
+content+="		<th rowspan=2>�Ұ�</th>";
+content+="	</tr>";
+content+="	<tr>";
+	<%for(int ni=1; ni<=money_cnt; ni++) {%>
+content+="		<th><%=money_cd.get(ni-1)%></th>";
+	<%}%>
+	<%for(int ni=1; ni<=no_money_cnt; ni++) {%>
+content+="		<th><%=no_money_cd.get(ni-1)%></th>";
+	<%}%>
+content+="	</tr>";
+
+<%if( !tt.equals("start") ) {
+	tmpSum = arrSum[2]+arrSum[20];
+%>
+content+="	<tr onMouseOver='tbRow_Over(this)' onMouseOut='tbRow_Out(this)'>";
+content+="		<th rowspan=2>��</th>";
+content+="		<td rowspan=2 style='text-align:right;'><%=formater2.format(tmpSum)%></td>";
+	<%for(int x=1; x<=money_cnt; x++) {%>
+content+="		<td style='text-align:right;'><%=formater2.format(arrSum[x+2])%></td>";
+	<%}%>
+content+="		<td style='text-align:right;'><%=formater2.format(arrSum[2])%></td>";
+	<%for(int x=1; x<=no_money_cnt; x++) {%>
+content+="		<td style='text-align:right;'><%=formater2.format(arrSum[x+20])%></td>";
+	<%}%>
+content+="		<td style='text-align:right;'><%=formater2.format(arrSum[20])%></td>";
+content+="	</tr>";
+content+="	<tr onMouseOver='tbRow_Over(this)' onMouseOut='tbRow_Out(this)'>";
+	<%for(int x=1; x<=money_cnt; x++) {%>
+content+="		<td style='text-align:right;'><%=formater.format(arrSum[x+2] / tmpSum * 100)%>%</td>";
+	<%}%>
+content+="		<td style='text-align:right;'><%=formater.format(arrSum[2] / tmpSum * 100)%>%</td>";
+	<%for(int x=1; x<=no_money_cnt; x++) {%>
+content+="		<td style='text-align:right;'><%=formater.format(arrSum[x+20] / tmpSum * 100)%>%</td>";
+	<%}%>
+content+="		<td style='text-align:right;'><%=formater.format(arrSum[20] / tmpSum * 100)%>%</td>";
+content+="	</tr>";
+<%for(i=1; i<=nLoop; i++) {
+	tmpSum = Float.parseFloat(arrData[i][2])+Float.parseFloat(arrData[i][20]);%>
+content+="	<tr onMouseOver='tbRow_Over(this)' onMouseOut='tbRow_Out(this)'>";
+content+="		<th rowspan=2><%=arrData[i][1]%></th>";
+content+="		<td rowspan=2 style='text-align:right;'><%=formater2.format(tmpSum)%></td>";
+	<%for(int x=1; x<=money_cnt; x++) {%>
+content+="		<td style='text-align:right;'><%=formater2.format(Float.parseFloat(arrData[i][x+2]))%></td>";
+	<%}%>
+content+="		<td style='text-align:right;'><%=formater2.format(Float.parseFloat(arrData[i][2]))%></td>";
+	<%for(int x=1; x<=no_money_cnt; x++) {%>
+content+="		<td style='text-align:right;'><%=formater2.format(Float.parseFloat(arrData[i][x+20]))%></td>";
+	<%}%>
+content+="		<td style='text-align:right;'><%=formater2.format(Float.parseFloat(arrData[i][20]))%></td>";
+content+="	</tr>";
+content+="	<tr onMouseOver='tbRow_Over(this)' onMouseOut='tbRow_Out(this)'>";
+	<%for(int x=1; x<=money_cnt; x++) {%>
+content+="		<td style='text-align:right;'><%=formater.format(Float.parseFloat(arrData[i][x+2]) / tmpSum * 100)%>%</td>";
+	<%}%>
+content+="		<td style='text-align:right;'><%=formater.format(Float.parseFloat(arrData[i][2]) / tmpSum * 100)%>%</td>";
+	<%for(int x=1; x<=no_money_cnt; x++) {%>
+content+="		<td style='text-align:right;'><%=formater.format(Float.parseFloat(arrData[i][x+20]) / tmpSum * 100)%>%</td>";
+	<%}%>
+content+="		<td style='text-align:right;'><%=formater.format(Float.parseFloat(arrData[i][20]) / tmpSum * 100)%>%</td>";
+content+="	</tr>";
+<%}%>
+<%}%>
+
+content+="</table>";
+
+top.document.getElementById("divResult").innerHTML = content;
+top.setNowProcessFalse();
+</script>
+
+<%@ include file="/hado/wTools/inc/WB_I_Function.jsp"%>

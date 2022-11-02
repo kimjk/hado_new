@@ -1,0 +1,216 @@
+<%@ page session="true" language="java" contentType="text/html; charset=euc-kr" pageEncoding="euc-kr"%>
+<%
+/**
+* 프로젝트명		: 하도급거래 서면실태조사 지원을 위한 개발용역 사업
+* 프로그램명		: WB_File_Down.jsp
+* 프로그램설명	: 파일다운로드
+* 프로그램버전	: 3.0.1
+* 최초작성일자	: 2014년 09월 14일
+* 작 성 이 력       :
+*=========================================================
+*	작성일자		작성자명				내용
+*=========================================================
+*	2014-09-14	정광식       최초작성
+*	2015-05-11	강슬기       파일 다운로드 경로 변경
+*	2015-05-18	정광식       내부관리툴에서 파일 업로드 제한
+*/
+%>
+<%@ page import="java.io.*"%>
+<%@ page import="java.sql.*"%>
+<%@ page import="java.util.*"%>
+<%@ page import="ftc.util.*"%>
+<%@ page import="java.net.URLEncoder"%>
+<%@ page import="ftc.db.ConnectionResource"%>
+<%@ page import="ftc.db.ConnectionResource2"%>
+
+<%@ include file="../Include/WB_Inc_Global.jsp"%>
+<%@ include file="../Include/WB_Inc_chkSession.jsp"%>
+
+<%!
+
+private void setDisposition(String filename, HttpServletRequest request, HttpServletResponse response) throws Exception {
+  String browser = getBrowser(request);
+
+  String dispositionPrefix = "attachment; filename=\"";
+  String encodedFilename = null;
+
+  if (browser.equals("MSIE")) {
+    encodedFilename = URLEncoder.encode(filename, "UTF-8").replaceAll("\\+", "%20");
+  } else if (browser.equals("Trident")) { // IE11 문자열 깨짐 방지
+    encodedFilename = URLEncoder.encode(filename, "UTF-8").replaceAll("\\+", "%20");
+  } else if (browser.equals("Firefox")) {
+    encodedFilename = "\"" + new String(filename.getBytes("UTF-8"), "8859_1") + "\"";
+  } else if (browser.equals("Opera")) {
+    encodedFilename = "\"" + new String(filename.getBytes("UTF-8"), "8859_1") + "\"";
+  } else if (browser.equals("Chrome")) {
+    StringBuffer sb = new StringBuffer();
+    for (int i = 0; i < filename.length(); i++) {
+      char c = filename.charAt(i);
+      if (c > '~') {
+        sb.append(URLEncoder.encode("" + c, "UTF-8"));
+      } else {
+        sb.append(c);
+      }
+    }
+    encodedFilename = sb.toString();
+  } else {
+    throw new IOException("Not supported browser");
+  }
+
+  response.setHeader("Content-Disposition", dispositionPrefix+ encodedFilename+"\"");
+
+  if ("Opera".equals(browser)) {
+    response.setContentType("application/octet-stream;charset=UTF-8");
+  }
+}
+
+private String getBrowser(HttpServletRequest request) {
+  String header = request.getHeader("User-Agent");
+  if (header.indexOf("MSIE") > -1) {
+    return "MSIE";
+  } else if (header.indexOf("Trident") > -1) { // IE11 문자열 깨짐 방지
+    return "Trident";
+  } else if (header.indexOf("Chrome") > -1) {
+    return "Chrome";
+  } else if (header.indexOf("Opera") > -1) {
+    return "Opera";
+  }
+  return "Firefox";
+}
+
+%>
+
+<%
+	ConnectionResource resource		= null;
+	Connection conn					= null;
+	PreparedStatement pstmt			= null;
+	ResultSet rs					= null;
+
+	String fileName			= "";
+	String sSQLs			= "";
+	String saveDirectory	= "";
+
+	if(ckCurrentYear.equals("2021")) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2021";
+	}
+	else if(ckCurrentYear.equals("2020")) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2020";
+	}
+	else if(ckCurrentYear.equals("2019")) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2019";
+	}
+	else if( ckCurrentYear.equals("2018") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2018";
+		//saveDirectory = "C:/workspace/hadoweb_real/webapp/upload/2018";
+		
+	} else if( ckCurrentYear.equals("2017") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2017";
+	} else if( ckCurrentYear.equals("2016") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2016";
+	} else if( ckCurrentYear.equals("2015") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2015";
+	} else if( ckCurrentYear.equals("2014") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2014";
+	} else if( ckCurrentYear.equals("2013") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2013";
+	} else if( ckCurrentYear.equals("2012") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2012";
+	} else if( ckCurrentYear.equals("2011") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2011";
+	} else if( ckCurrentYear.equals("2010") ) {
+		saveDirectory = "/home1/ftc/hadoweb/upload/2010";
+	} else {
+		saveDirectory = "/home1/ftc/hadoweb/upload";
+	}
+
+    String Type = "";
+           Type = request.getParameter("Type") == null ? "S" : request.getParameter("Type");
+ 
+           
+   if("S".equals(Type)){
+       // 수급사업자 명부      
+   	sSQLs="SELECT OENT_FILE FROM HADO_TB_Oent_Subcon_File \n";
+   	sSQLs+="WHERE Mng_No='"+ckMngNo+"' \n";
+   	sSQLs+="AND Current_Year='"+ckCurrentYear+"' \n";
+   	sSQLs+="AND Oent_GB='"+ckOentGB+"' \n";
+   }else if("O".equals(Type)){
+       // 제외대상자 증빙자료
+       sSQLs=  "SELECT file_name OENT_FILE \n";
+       sSQLs+= "FROM HADO_TB_OENT_ATTACH_FILE \n";
+       sSQLs+= "WHERE mng_no = '"+ckMngNo+"' \n";
+       sSQLs+= "AND current_year = '"+ckCurrentYear+"' \n";
+       sSQLs+= "AND oent_gb = '"+ckOentGB+"' \n";
+       sSQLs+= "AND file_sn = (SELECT MAX(file_sn) FROM HADO_TB_OENT_ATTACH_FILE \n";
+       sSQLs+= "WHERE mng_no = '"+ckMngNo+"' \n";
+       sSQLs+= "AND current_year = '"+ckCurrentYear+"' \n";
+       sSQLs+= "AND oent_gb = '"+ckOentGB+"' ) \n";
+   }else if("F".equals(Type)){
+       
+       ckMngNo = request.getParameter("mngNo") == null ? "" : request.getParameter("mngNo");
+       ckCurrentYear = request.getParameter("cyear") == null ? "" : request.getParameter("cyear");
+       ckOentGB = request.getParameter("wgb") == null ? "" : request.getParameter("wgb");
+	   saveDirectory = "/home1/ftc/hadoweb/upload/2021";
+
+       sSQLs=  "SELECT file_name OENT_FILE \n";
+       sSQLs+= "FROM HADO_TB_OENT_SELFCORREC_FILE \n";
+       sSQLs+= "WHERE mng_no = '"+ckMngNo+"' \n";
+       sSQLs+= "AND current_year = '"+ckCurrentYear+"' \n";
+       sSQLs+= "AND oent_gb = '"+ckOentGB+"' \n";
+       sSQLs+= "AND file_sn = (SELECT MAX(file_sn) FROM HADO_TB_OENT_SELFCORREC_FILE \n";
+       sSQLs+= "WHERE mng_no = '"+ckMngNo+"' \n";
+       sSQLs+= "AND current_year = '"+ckCurrentYear+"' \n";
+       sSQLs+= "AND oent_gb = '"+ckOentGB+"' ) \n";
+       
+   }else if("Sample".equals(Type)){
+       sSQLs = "SELECT 1 AS OENT_FILE FROM DUAL";
+   }
+/*=================================== Record Processing ===============================================*/
+
+	try {
+		resource	= new ConnectionResource();
+		conn		= resource.getConnection();
+		pstmt		= conn.prepareStatement(sSQLs);
+        
+        System.out.println(sSQLs.toString());   
+       
+		rs			= pstmt.executeQuery();
+
+		while (rs.next()) {
+			fileName = rs.getString("OENT_FILE")==null ? "":rs.getString("OENT_FILE").trim();
+		}
+
+		rs.close();
+	} catch(Exception e){
+		e.printStackTrace();
+	} finally {
+		if ( rs != null )		try{rs.close();}	catch(Exception e){}
+		if ( pstmt != null )	try{pstmt.close();}	catch(Exception e){}
+		if ( conn != null )		try{conn.close();}	catch(Exception e){}
+		if ( resource != null ) resource.release();
+	}
+
+	if(fileName != null && (!fileName.equals("")) ) {
+		File file	= new File(saveDirectory + "/" + fileName);
+		byte b[]	= new byte[4096];
+    
+		String mimetype = "application/octet-stream";
+		//response.setBufferSize(fSize);	// OutOfMemeory 발생
+		response.setContentType(mimetype);
+		//response.setHeader("Content-Disposition", "attachment; filename=\"" + URLEncoder.encode(fvo.getOrignlFileNm(), "utf-8") + "\"");
+		setDisposition(fileName, request, response);
+		//response.setHeader("Content-Disposition", "attachment;filename="+fileName+";");
+ 
+		if(file.isFile()) {
+			BufferedInputStream fine	= new BufferedInputStream(new FileInputStream(file));
+			BufferedOutputStream outs	= new BufferedOutputStream(response.getOutputStream());
+			int read = 0;
+
+			while ((read = fine.read(b)) != -1) {
+				outs.write(b,0,read);
+			}
+
+			outs.close();
+			fine.close();
+		}
+	}
+%>

@@ -1,0 +1,382 @@
+<%@ page session="true" language="java" contentType="text/html; charset=euc-kr" pageEncoding="euc-kr"%>
+<%@ page import="java.io.*"%>
+<%@ page import="java.sql.*"%>
+<%@ page import="java.util.*"%>
+<%@ page import="ftc.util.*"%>
+
+<%@ page import="ftc.db.ConnectionResource"%>
+<%@ page import="ftc.db.ConnectionResource2"%>
+
+<%@ include file="/hado/wTools/inc/WB_I_Global.jsp"%>
+
+<%
+/* -- Product Notice ----------------------------------------------------------------------------------*/
+/*  1. 프로젝트명 : 공정관리위원회 하도급거래 서면직권실태조사					                       */
+/*  2. 업체정보 :																					   */
+/*     - 업체명 : (주)로티스아이																	   */
+/*	   - Project Manamger : 정광식 부장 (pcxman99@naver.com)										   */
+/*     - 연락처 : T) 031-902-9188 F) 031-902-9189 H) 010-8329-9909									   */
+/*  3. 일자 : 2009년 5월																			   */
+/*  4. 최초작성자 및 일자 : (주)로티스아이 정광식 / 2011-10-18										   */
+/*  5. 업데이트내용 (내용 / 일자)																	   */
+/*  6. 비고																							   */
+/*		1) 웹관리툴 리뉴얼 / 2011-10-18																   */
+/*-----------------------------------------------------------------------------------------------------*/
+
+/*---------------------------------------- Variable Difinition ----------------------------------------*/
+	String sCmd = StringUtil.checkNull(request.getParameter("sql")).trim();
+	String sLoc = StringUtil.checkNull(request.getParameter("loc")).trim();
+	String sMsg = StringUtil.checkNull(request.getParameter("msg")).trim();
+	String sMngNo = StringUtil.checkNull(request.getParameter("no")).trim();
+	String sCYear = StringUtil.checkNull(request.getParameter("yyyy")).trim();
+	String sOentGB = StringUtil.checkNull(request.getParameter("gb")).trim();
+	String sSentNo = StringUtil.checkNull(request.getParameter("sno")).trim();
+	String sQ_CD = StringUtil.checkNull(request.getParameter("mqcd")).trim();
+	String sQ_GB = StringUtil.checkNull(request.getParameter("mqgb")).trim();
+	String sProc = StringUtil.checkNull(request.getParameter("proc")).trim();
+	
+	ConnectionResource resource = null;
+	Connection conn = null;
+	PreparedStatement pstmt = null;
+	ResultSet rs = null;
+	ConnectionResource2 resource2 = null;
+	Connection conn2 = null;
+
+	String sSQLs = "";
+	String sReturnURL = "/hado/hado/index3.jsp";
+
+	String sTableName1 = "HADO_TB_Oent";
+	String sTableName2 = "HADO_TB_Oent_Answer";
+	String sTableName3 = "HADO_TB_REC_PAY";
+	String sTableName4 = "HADO_TB_OENT_CASH_PAYTYPE";
+/*-----------------------------------------------------------------------------------------------------*/
+
+/*=================================== Record Selection Processing =====================================*/
+	if( sCYear.equals("2012") ) {
+		sTableName1 = "HADO_TB_Oent_2012";
+		sTableName2 = "HADO_TB_Oent_Answer_2012";
+		sTableName3 = "HADO_TB_REC_PAY_2012";
+		sTableName4 = "HADO_TB_OENT_CASH_PAYTYPE_2012";
+	} else if( sCYear.equals("2013") ) {
+		sTableName1 = "HADO_TB_Oent_2013";
+		sTableName2 = "HADO_TB_Oent_Answer_2013";
+		sTableName3 = "HADO_TB_REC_PAY_2013";
+		sTableName4 = "HADO_TB_OENT_CASH_PAYTYPE_2013";
+	}
+
+	if( sCmd != null && sCmd.equals("edit") ) {
+
+		if(sMngNo != null && sCYear != null && sOentGB != null && (!sMngNo.equals("")) && (!sCYear.equals("")) && (!sOentGB.equals("")) ) {
+			try {
+				resource2 = new ConnectionResource2();
+				conn2 = resource2.getConnection();
+				
+				sSQLs = "UPDATE "+sTableName1+" SET OENT_NAME = '" + new String(StringUtil.checkNull(request.getParameter("oname")).trim().replaceAll("'","''").getBytes("EUC-KR"), "ISO8859-1" ) + "'";
+				if(request.getParameter("mtype2") != null) {
+					sSQLs += ", OENT_TYPE = '" + StringUtil.checkNull(request.getParameter("mtype2")).trim() + "'";
+				}
+				if(request.getParameter("ocaptine") != null) {
+					sSQLs += ", OENT_CAPTINE = '" + new String(StringUtil.checkNull(request.getParameter("ocaptine")).trim().replaceAll("'","''").getBytes("EUC-KR"), "ISO8859-1" ) + "'";
+				} else {
+					sSQLs += ", OENT_CAPTINE = ''";
+				}
+				if(request.getParameter("rpost1") != null && request.getParameter("rpost2") != null) {
+					sSQLs += ", zip_code='"+StringUtil.checkNull(request.getParameter("rpost1")).trim()+"-"+StringUtil.checkNull(request.getParameter("rpost2")).trim()+"'";
+				} else {
+					sSQLs += ", zip_code=''";
+				}
+				if(request.getParameter("raddr") != null) {
+					sSQLs += ", oent_address='"+new String(StringUtil.checkNull(request.getParameter("raddr")).trim().replaceAll("'","''").getBytes("EUC-KR"), "ISO8859-1" )+"'";
+				} else {
+					sSQLs += ", oent_address=''";
+				}
+				if(request.getParameter("otel") != null) {
+					sSQLs += ", oent_tel='"+StringUtil.checkNull(request.getParameter("otel")).trim().replaceAll("'","''")+"'";
+				} else {
+					sSQLs += ", oent_tel=''";
+				}
+				if(request.getParameter("ofax") != null) {
+					sSQLs += ", oent_fax='"+StringUtil.checkNull(request.getParameter("ofax")).trim().replaceAll("'","''")+"'";
+				} else {
+					sSQLs += ", oent_fax=''";
+				}
+				if(request.getParameter("osale01") != null && (!request.getParameter("osale01").equals(""))) {
+					sSQLs += ", oent_sale01="+StringUtil.checkNull(request.getParameter("osale01")).trim().replaceAll(",","");
+				} else {
+					sSQLs += ", oent_sale01=0";
+				}
+				if(request.getParameter("osale02") != null && (!request.getParameter("osale02").equals(""))) {
+					sSQLs += ", oent_sale02="+StringUtil.checkNull(request.getParameter("osale02")).trim().replaceAll(",","");
+				} else {
+					sSQLs += ", oent_sale02=0";
+				}
+				if(request.getParameter("oconamt") != null && (!request.getParameter("oconamt").equals(""))) {
+					sSQLs += ", oent_con_amt="+StringUtil.checkNull(request.getParameter("oconamt")).trim().replaceAll(",","");
+				} else {
+					sSQLs += ", oent_con_amt=0";
+				}
+				if(request.getParameter("oempcnt") != null && (!request.getParameter("oempcnt").equals(""))) {
+					sSQLs += ", oent_emp_cnt="+StringUtil.checkNull(request.getParameter("oempcnt")).trim().replaceAll(",","");
+				} else {
+					sSQLs += ", oent_emp_cnt=0";
+				}
+				if(request.getParameter("ocogb") != null) {
+					sSQLs += ", oent_co_gb='"+StringUtil.checkNull(request.getParameter("ocogb")).trim()+"'";
+				} else {
+					sSQLs += ", oent_co_gb=''";
+				}
+				if(request.getParameter("ocono") != null) {
+					sSQLs += ", oent_co_no='"+StringUtil.checkNull(request.getParameter("ocono")).trim().replaceAll("'","''")+"'";
+				} else {
+					sSQLs += ", oent_co_no=''";
+				}
+				if(request.getParameter("ono") != null) {
+					sSQLs += ", oent_sa_no='"+StringUtil.checkNull(request.getParameter("ono")).trim().replaceAll("'","''")+"'";
+				} else {
+					sSQLs += ", oent_sa_no=''";
+				}
+				if(request.getParameter("assignmail") != null) {
+					sSQLs += ", assign_mail='"+StringUtil.checkNull(request.getParameter("assignmail")).trim().replaceAll("'","''")+"'";
+				} else {
+					sSQLs += ", assign_mail=''";
+				}
+				if(request.getParameter("w") != null) {
+					sSQLs += ", writer_name='"+new String(StringUtil.checkNull(request.getParameter("w")).trim().replaceAll("'","''").getBytes("EUC-KR"), "ISO8859-1" )+"'";
+				} else {
+					sSQLs += ", writer_name=''";
+				}
+				if(request.getParameter("worg") != null) {
+					sSQLs += ", writer_org='"+new String(StringUtil.checkNull(request.getParameter("worg")).trim().replaceAll("'","''").getBytes("EUC-KR"), "ISO8859-1" )+"'";
+				} else {
+					sSQLs += ", writer_org=''";
+				}
+				if(request.getParameter("wjikwi") != null) {
+					sSQLs += ", writer_jikwi='"+new String(StringUtil.checkNull(request.getParameter("wjikwi")).trim().replaceAll("'","''").getBytes("EUC-KR"), "ISO8859-1" )+"'";
+				} else {
+					sSQLs += ", writer_jikwi=''";
+				}
+				if(request.getParameter("wtel") != null) {
+					sSQLs += ", writer_tel='"+StringUtil.checkNull(request.getParameter("wtel")).trim().replaceAll("'","''")+"'";
+				} else {
+					sSQLs += ", writer_tel=''";
+				}
+				if(request.getParameter("wfax") != null) {
+					sSQLs += ", writer_fax='"+StringUtil.checkNull(request.getParameter("wfax")).trim().replaceAll("'","''")+"'";
+				} else {
+					sSQLs += ", writer_fax=''";
+				}
+				if(request.getParameter("returngb") != null) {
+					sSQLs += ", return_gb='"+StringUtil.checkNull(request.getParameter("returngb")).trim()+"'";
+				} else {
+					sSQLs += ", return_gb=''";
+				}
+				if(request.getParameter("resend") != null) {
+					sSQLs += ", re_send='"+StringUtil.checkNull(request.getParameter("resend")).trim()+"'";
+				} else {
+					sSQLs += ", re_send=''";
+				}
+				if(request.getParameter("compstatus") != null) {
+					sSQLs += ", comp_status='"+StringUtil.checkNull(request.getParameter("compstatus")).trim()+"'";
+				} else {
+					sSQLs += ", comp_status=''";
+				}
+				if(request.getParameter("subcontype") != null) {
+					sSQLs += ", subcon_type='"+StringUtil.checkNull(request.getParameter("subcontype")).trim()+"'";
+				} else {
+					sSQLs += ", subcon_type=''";
+				}
+				if(request.getParameter("ostatus") != null) {
+					sSQLs += ", oent_status='"+StringUtil.checkNull(request.getParameter("ostatus")).trim()+"'";
+				} else {
+					sSQLs += ", oent_status=''";
+				}
+				if(request.getParameter("astatus") != null) {
+					sSQLs += ", addr_status='"+StringUtil.checkNull(request.getParameter("astatus")).trim()+"'";
+				} else {
+					sSQLs += ", addr_status=''";
+				}
+				
+				sSQLs += " where mng_no='"+sMngNo+"' and current_year='"+sCYear+"' and oent_gb='"+sOentGB+"'";
+//System.out.println(sSQLs);
+				pstmt = conn2.prepareStatement(sSQLs);
+				int updateCNT = pstmt.executeUpdate();
+			}
+			catch(Exception e){
+				e.printStackTrace();
+			}
+			finally {
+				if ( rs != null ) try{rs.close();}catch(Exception e){}
+				if ( pstmt != null ) try{pstmt.close();}catch(Exception e){}
+				if ( conn2 != null ) try{conn2.close();}catch(Exception e){}
+				if ( resource2 != null ) resource2.release();
+			}
+			
+			sReturnURL	=  "Oent_View.jsp?no="+sMngNo+"&yyyy="+sCYear+"&gb="+sOentGB;
+		}
+	}
+
+	if( sCmd != null && sCmd.equals("answerdel") ) {
+		if(sMngNo != null && sCYear != null && sOentGB != null && sQ_CD != null & sQ_GB != null && (!sMngNo.equals("")) && (!sCYear.equals("")) && (!sOentGB.equals("")) && (!sQ_CD.equals("")) && (!sQ_GB.equals("")) ) {
+			try {
+				resource2 = new ConnectionResource2();
+				conn2 = resource2.getConnection();
+
+				sSQLs = "DELETE FROM "+sTableName2+" WHERE Mng_No = '" + sMngNo + "' " +
+						"AND Current_Year = '" + sCYear + "' " +
+						"AND Oent_gb = '" + sOentGB + "' " +
+						"AND Oent_Q_CD = " + sQ_CD + " AND Oent_Q_GB = " + sQ_GB;
+
+				pstmt = conn2.prepareStatement(sSQLs);
+				int updateCNT = pstmt.executeUpdate();
+			}
+			catch(Exception e){
+				e.printStackTrace();
+			}
+			finally {
+				if ( rs != null ) try{rs.close();}catch(Exception e){}
+				if ( pstmt != null ) try{pstmt.close();}catch(Exception e){}
+				if ( conn2 != null ) try{conn2.close();}catch(Exception e){}
+				if ( resource2 != null ) resource2.release();
+			}
+		}
+
+		sReturnURL	=  "delanswer.jsp?no="+sMngNo+"&yyyy="+sCYear+"&gb="+sOentGB;
+	}
+
+	if( sCmd != null && sCmd.equals("answerinit") ) {
+		if(sMngNo != null && sCYear != null && sOentGB != null && (!sMngNo.equals("")) && (!sCYear.equals("")) && (!sOentGB.equals("")) ) {
+			try {
+				resource2 = new ConnectionResource2();
+				conn2 = resource2.getConnection();
+				
+				// 하도급거래상황
+				sSQLs ="DELETE FROM "+sTableName2+" \n";
+				sSQLs+="WHERE Mng_No=? \n";
+				sSQLs+="	AND Current_Year=? \n";
+				sSQLs+="	AND Oent_GB=? \n";
+
+				pstmt = conn2.prepareStatement(sSQLs);
+				pstmt.setString(1,sMngNo);
+				pstmt.setString(2,sCYear);
+				pstmt.setString(3,sOentGB);
+				int updateCNT1 = pstmt.executeUpdate();
+				
+				// 본사 및 사업소현황
+				sSQLs ="DELETE FROM HADO_TB_OENT_HD_BR \n";
+				sSQLs+="WHERE Mng_No=? \n";
+				sSQLs+="	AND Current_Year=? \n";
+				sSQLs+="	AND Oent_GB=? \n";
+
+				pstmt = conn2.prepareStatement(sSQLs);
+				pstmt.setString(1,sMngNo);
+				pstmt.setString(2,sCYear);
+				pstmt.setString(3,sOentGB);
+				int updateCNT2 = pstmt.executeUpdate();
+
+				// 하도급대금 내역
+				sSQLs ="DELETE FROM "+sTableName3+" \n";
+				sSQLs+="WHERE Mng_No=? \n";
+				sSQLs+="	AND Current_Year=? \n";
+				sSQLs+="	AND Oent_GB=? \n";
+
+				pstmt = conn2.prepareStatement(sSQLs);
+				pstmt.setString(1,sMngNo);
+				pstmt.setString(2,sCYear);
+				pstmt.setString(3,sOentGB);
+				int updateCNT3 = pstmt.executeUpdate();
+
+				// 현금성 결제내역 1
+				sSQLs ="DELETE FROM HADO_TB_OENT_CASH_DAYTERM \n";
+				sSQLs+="WHERE Mng_No=? \n";
+				sSQLs+="	AND Current_Year=? \n";
+				sSQLs+="	AND Oent_GB=? \n";
+
+				pstmt = conn2.prepareStatement(sSQLs);
+				pstmt.setString(1,sMngNo);
+				pstmt.setString(2,sCYear);
+				pstmt.setString(3,sOentGB);
+				int updateCNT4 = pstmt.executeUpdate();
+				
+				// 현금성 결제내역 2
+				sSQLs ="DELETE FROM "+sTableName4+" \n";
+				sSQLs+="WHERE Mng_No=? \n";
+				sSQLs+="	AND Current_Year=? \n";
+				sSQLs+="	AND Oent_GB=? \n";
+
+				pstmt = conn2.prepareStatement(sSQLs);
+				pstmt.setString(1,sMngNo);
+				pstmt.setString(2,sCYear);
+				pstmt.setString(3,sOentGB);
+				int updateCNT5 = pstmt.executeUpdate();
+
+				// 수급사업자 업로드 파일
+				sSQLs ="DELETE FROM HADO_TB_OENT_SUBCON_FILE \n";
+				sSQLs+="WHERE Mng_No=? \n";
+				sSQLs+="	AND Current_Year=? \n";
+				sSQLs+="	AND Oent_GB=? \n";
+
+				pstmt = conn2.prepareStatement(sSQLs);
+				pstmt.setString(1,sMngNo);
+				pstmt.setString(2,sCYear);
+				pstmt.setString(3,sOentGB);
+				int updateCNT6 = pstmt.executeUpdate();
+
+				// 수급사업자명부
+				sSQLs ="DELETE FROM HADO_TB_SUBCON_"+sCYear+" \n";
+				sSQLs+="WHERE Mng_No=? \n";
+				sSQLs+="	AND Current_Year=? \n";
+				sSQLs+="	AND Oent_GB=? \n";
+
+				pstmt = conn2.prepareStatement(sSQLs);
+				pstmt.setString(1,sMngNo);
+				pstmt.setString(2,sCYear);
+				pstmt.setString(3,sOentGB);
+				int updateCNT7 = pstmt.executeUpdate();
+
+				// 2010.5.25 류지호 초기화시 저장버튼이 안보이는 문제로 oent_status=null 추가
+				sSQLs ="UPDATE "+sTableName1+" \n";
+				sSQLs+="SET Oent_Status=NULL \n";
+				sSQLs+="WHERE Mng_No=? \n";
+				sSQLs+="	AND Current_Year=? \n";
+				sSQLs+="	AND Oent_GB=? \n";
+				pstmt = conn2.prepareStatement(sSQLs);
+				pstmt.setString(1,sMngNo);
+				pstmt.setString(2,sCYear);
+				pstmt.setString(3,sOentGB);
+				int updateCNT8 = pstmt.executeUpdate();
+			}
+			catch(Exception e){
+				e.printStackTrace();
+			}
+			finally {
+				if ( rs != null ) try{rs.close();}catch(Exception e){}
+				if ( pstmt != null ) try{pstmt.close();}catch(Exception e){}
+				if ( conn2 != null ) try{conn2.close();}catch(Exception e){}
+				if ( resource2 != null ) resource2.release();
+			}
+		}
+
+	}
+/*=====================================================================================================*/
+%>
+<html>
+<head>
+	<title></title>
+</head>
+
+<body>
+
+<script language="javascript">
+	<%if( sCmd != null && sCmd.equals("edit") ) {%>
+	alert("원사업자 정보를 수정하였습니다.");
+	top.view('<%=sMngNo%>','<%=sCYear%>','<%=sOentGB%>');
+	<%}%>
+
+	<%if( sCmd != null && sCmd.equals("answerinit") ) {%>
+	alert("원사업자 응답내역 초기화를 완료 하였습니다");
+	top.setNowProcessFalse();
+	<%}%>
+</script>
+
+</body>
+</html>
